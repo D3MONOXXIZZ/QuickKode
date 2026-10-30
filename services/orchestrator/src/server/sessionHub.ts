@@ -226,6 +226,17 @@ export class SessionHub {
                 });
               }
 
+              // Broadcast updated virtual file tree to mobile client
+              try {
+                const tree = await ctx.sandbox.listDirectory('.');
+                this.broadcast(sessionId, 'file:tree', {
+                  sessionId,
+                  tree,
+                });
+              } catch {
+                // ignore if listing fails
+              }
+
               if (result.testResult) {
                 this.broadcast(sessionId, 'agent:test_completed', {
                   sessionId,
