@@ -40,6 +40,8 @@ export const BYOKConfigSchema = z.object({
   googleClientSecret: z.string().optional(),
   geminiApiKey: z.string().optional(),
   githubToken: z.string().optional(),
+  githubClientId: z.string().optional(),
+  githubClientSecret: z.string().optional(),
   openAiApiKey: z.string().optional(),
   anthropicApiKey: z.string().optional(),
   deepseekApiKey: z.string().optional(),

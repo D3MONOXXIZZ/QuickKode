@@ -11,6 +11,7 @@ export interface SettingsModalProps {
   onSave: (config: BYOKConfig) => void;
   userProfile?: UserProfile | null;
   onSignInGoogle?: () => Promise<void>;
+  onSignInGitHub?: () => Promise<void>;
   onSignOut?: () => Promise<void>;
 }
 
@@ -21,24 +22,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSave,
   userProfile,
   onSignInGoogle,
+  onSignInGitHub,
   onSignOut,
 }) => {
   const [serverUrl, setServerUrl] = useState(config.orchestratorServerUrl ?? 'ws://192.168.1.80:4000');
   const [e2bKey, setE2bKey] = useState(config.e2bApiKey ?? '');
   const [geminiKey, setGeminiKey] = useState(config.geminiApiKey ?? '');
   const [googleClientId, setGoogleClientId] = useState(config.googleClientId ?? '');
+  const [githubClientId, setGithubClientId] = useState(config.githubClientId ?? '');
   const [deepseekKey, setDeepseekKey] = useState(config.deepseekApiKey ?? '');
   const [anthropicKey, setAnthropicKey] = useState(config.anthropicApiKey ?? '');
   const [openAiKey, setOpenAiKey] = useState(config.openAiApiKey ?? '');
   const [githubToken, setGithubToken] = useState(config.githubToken ?? '');
   const [driveFolderId, setDriveFolderId] = useState(config.googleDriveFolderId ?? '');
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningInGithub, setIsSigningInGithub] = useState(false);
 
   useEffect(() => {
     setServerUrl(config.orchestratorServerUrl ?? 'ws://192.168.1.80:4000');
     setE2bKey(config.e2bApiKey ?? '');
     setGeminiKey(config.geminiApiKey ?? '');
     setGoogleClientId(config.googleClientId ?? '');
+    setGithubClientId(config.githubClientId ?? '');
     setDeepseekKey(config.deepseekApiKey ?? '');
     setAnthropicKey(config.anthropicApiKey ?? '');
     setOpenAiKey(config.openAiApiKey ?? '');
@@ -51,6 +56,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     config.googleOAuthToken,
   );
 
+  const isGitHubConnected = Boolean(
+    (userProfile?.provider === 'github' && userProfile.token) ||
+    config.githubToken,
+  );
+
   const handleGoogleSignIn = async () => {
     if (!onSignInGoogle) return;
     setIsSigningIn(true);
@@ -61,11 +71,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const handleGitHubSignIn = async () => {
+    if (!onSignInGitHub) return;
+    setIsSigningInGithub(true);
+    try {
+      await onSignInGitHub();
+    } finally {
+      setIsSigningInGithub(false);
+    }
+  };
+
   const handleSave = () => {
     onSave({
       antigravityAuthType: isGoogleConnected ? 'oauth' : geminiKey.trim() ? 'api_key' : 'pc_account',
       orchestratorServerUrl: serverUrl.trim() || 'ws://192.168.1.80:4000',
       googleClientId: googleClientId.trim() || undefined,
+      githubClientId: githubClientId.trim() || undefined,
       e2bApiKey: e2bKey.trim() || undefined,
       geminiApiKey: geminiKey.trim() || undefined,
       deepseekApiKey: deepseekKey.trim() || undefined,
@@ -250,11 +271,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {/* 5. GitHub Integration */}
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>🐙 GitHub Token</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>🐙 GitHub Account & Sync</Text>
+                {isGitHubConnected && (
+                  <View style={styles.sectionBadgeSuccess}>
+                    <Text style={styles.sectionBadgeSuccessText}>CONNECTED</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.sectionSubtitle}>
-                Personal Access Token with repo scope for cloning and pushing code.
+                Sign in with GitHub for 1-click access to private repositories, branch management, and automated git push, or enter a Personal Access Token.
               </Text>
-              <Text style={styles.inputLabel}>GitHub Personal Access Token (PAT)</Text>
+
+              {isGitHubConnected ? (
+                <View style={styles.googleConnectedBox}>
+                  <View style={styles.googleUserRow}>
+                    <Text style={styles.googleIcon}>🐙</Text>
+                    <View style={styles.googleUserTextCol}>
+                      <Text style={styles.googleUserName}>
+                        {userProfile?.displayName || userProfile?.username || 'GitHub Developer'}
+                      </Text>
+                      <Text style={styles.googleUserEmail}>
+                        @{userProfile?.username || 'developer'} • OAuth Active
+                      </Text>
+                    </View>
+                  </View>
+                  {onSignOut && (
+                    <TouchableOpacity
+                      style={styles.googleSignOutBtn}
+                      onPress={onSignOut}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.googleSignOutText}>Disconnect</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.githubSignInBtn, isSigningInGithub && styles.btnDisabled]}
+                  onPress={handleGitHubSignIn}
+                  disabled={isSigningInGithub}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.googleSignInIcon}>🐙</Text>
+                  <Text style={styles.googleSignInText}>
+                    {isSigningInGithub ? 'Connecting to GitHub...' : 'Sign in with GitHub (1-Tap OAuth)'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <Text style={styles.inputLabel}>GitHub OAuth Client ID (Optional custom GitHub App)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ov23... (from github.com/settings/developers)"
+                placeholderTextColor={theme.colors.textMuted}
+                value={githubClientId}
+                onChangeText={setGithubClientId}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.inputLabel}>GitHub Personal Access Token (Alternative PAT)</Text>
               <TextInput
                 style={styles.input}
                 placeholder="ghp_..."
@@ -470,6 +546,22 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     marginBottom: 12,
     shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  githubSignInBtn: {
+    backgroundColor: '#24292F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#374151',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

@@ -388,12 +388,17 @@ export const App: React.FC = () => {
 
   const handleSignInGitHub = async () => {
     try {
-      const profile = await OAuthService.signInWithGitHub(byokConfig.orchestratorServerUrl);
-      setUserProfile(profile);
-      if (profile.token) {
-        const updated = { ...byokConfig, githubToken: profile.token };
-        setByokConfig(updated);
-        void SettingsStorage.saveConfig(updated);
+      const profile = await OAuthService.signInWithGitHub(
+        byokConfig.orchestratorServerUrl,
+        byokConfig.githubClientId,
+      );
+      if (profile) {
+        setUserProfile(profile);
+        if (profile.token) {
+          const updated: BYOKConfig = { ...byokConfig, githubToken: profile.token };
+          setByokConfig(updated);
+          void SettingsStorage.saveConfig(updated);
+        }
       }
     } catch (err) {
       console.warn('[App] GitHub sign-in failed:', err);
@@ -430,29 +435,37 @@ export const App: React.FC = () => {
   };
 
   const handleSignOut = async () => {
+    const isGitHub = userProfile?.provider === 'github';
     await OAuthService.signOut();
     setUserProfile(null);
     const updated: BYOKConfig = {
       ...byokConfig,
-      googleOAuthToken: undefined,
-      antigravityAuthType: byokConfig.geminiApiKey ? 'api_key' : 'pc_account',
+      googleOAuthToken: isGitHub ? byokConfig.googleOAuthToken : undefined,
+      githubToken: isGitHub ? undefined : byokConfig.githubToken,
+      antigravityAuthType: isGitHub
+        ? byokConfig.antigravityAuthType
+        : byokConfig.geminiApiKey
+        ? 'api_key'
+        : 'pc_account',
     };
     setByokConfig(updated);
     void SettingsStorage.saveConfig(updated);
-    if (byokConfig.geminiApiKey) {
-      setActiveModel({
-        provider: 'antigravity',
-        modelName: 'antigravity-gemini-2.5',
-        authType: 'api_key',
-        geminiApiKey: byokConfig.geminiApiKey,
-      });
-    } else {
-      setActiveModel({
-        provider: 'antigravity',
-        modelName: 'antigravity-gemini-2.5',
-        authType: 'api_key',
-        geminiApiKey: undefined,
-      });
+    if (!isGitHub) {
+      if (byokConfig.geminiApiKey) {
+        setActiveModel({
+          provider: 'antigravity',
+          modelName: 'antigravity-gemini-2.5',
+          authType: 'api_key',
+          geminiApiKey: byokConfig.geminiApiKey,
+        });
+      } else {
+        setActiveModel({
+          provider: 'antigravity',
+          modelName: 'antigravity-gemini-2.5',
+          authType: 'api_key',
+          geminiApiKey: undefined,
+        });
+      }
     }
   };
 
@@ -526,6 +539,7 @@ export const App: React.FC = () => {
           config={byokConfig}
           userProfile={userProfile}
           onSignInGoogle={handleSignInGoogle}
+          onSignInGitHub={handleSignInGitHub}
           onSignOut={handleSignOut}
           onSave={(newConfig) => {
             const previousUrl = byokConfig.orchestratorServerUrl;

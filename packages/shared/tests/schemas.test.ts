@@ -5,6 +5,7 @@ import {
   ExecutionModeSchema,
   AntigravityModelConfigSchema,
   OpenCodeModelConfigSchema,
+  BYOKConfigSchema,
 } from '../src/index.js';
 
 function runSchemaTests() {
@@ -90,6 +91,16 @@ function runSchemaTests() {
     content: 'export const Header = () => <div>Header</div>;',
   });
   assert(validFileWrite.success, 'File write payload validates properly');
+
+  // 7. Test BYOK Config with GitHub and Google OAuth Credentials
+  const validByok = BYOKConfigSchema.safeParse({
+    antigravityAuthType: 'oauth',
+    googleOAuthToken: 'ya29.test_token',
+    googleClientId: '123-abc.apps.googleusercontent.com',
+    githubToken: 'gho_test_token_123',
+    githubClientId: 'Ov23test123',
+  });
+  assert(validByok.success, 'BYOKConfig validates with Google and GitHub OAuth credentials');
 
   console.log(`\nAudit Results: ${passed} passed, ${failed} failed.`);
   if (failed > 0) {

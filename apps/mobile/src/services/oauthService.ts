@@ -9,30 +9,43 @@ export class OAuthService {
   /**
    * Prompts user for 1-tap GitHub OAuth login
    */
-  static async signInWithGitHub(serverUrl = 'http://192.168.1.80:4000'): Promise<UserProfile> {
+  static async signInWithGitHub(
+    serverUrl = 'http://192.168.1.80:4000',
+    clientId?: string,
+  ): Promise<UserProfile | null> {
     const redirectUrl = makeRedirectUri({
       scheme: 'quickkode',
       path: 'auth/github',
     });
 
     try {
-      // 1. Fetch OAuth URL from server or use standard GitHub App flow
-      const authUrl = `${serverUrl.replace('ws', 'http')}/auth/github?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+      let authUrl = `${serverUrl.replace('ws', 'http')}/auth/github?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+      if (clientId) {
+        authUrl += `&client_id=${encodeURIComponent(clientId)}`;
+      }
 
       const authResult = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
       if (authResult.type === 'success' && authResult.url) {
         const urlParams = new URL(authResult.url);
+        const error = urlParams.searchParams.get('error');
+        if (error) {
+          throw new Error(`GitHub OAuth error: ${error}`);
+        }
+
         const token = urlParams.searchParams.get('token');
-        const username = urlParams.searchParams.get('username') || 'GitHub User';
+        const username = urlParams.searchParams.get('username') || 'developer';
+        const name = urlParams.searchParams.get('name') || username;
+        const email = urlParams.searchParams.get('email') || undefined;
         const avatarUrl = urlParams.searchParams.get('avatar_url') || undefined;
 
         if (token) {
           const profile: UserProfile = {
             id: `gh-${username}`,
             provider: 'github',
-            displayName: username,
+            displayName: name,
             username,
+            email,
             avatarUrl,
             token,
             createdAt: new Date().toISOString(),
@@ -43,20 +56,10 @@ export class OAuthService {
       }
     } catch (err) {
       console.warn('[OAuthService] GitHub WebBrowser flow:', err);
+      throw err;
     }
 
-    // Fallback: Check if user has an active token or create an authenticated session
-    const fallbackProfile: UserProfile = {
-      id: `gh-user-${Date.now()}`,
-      provider: 'github',
-      displayName: 'GitHub Developer',
-      username: 'developer',
-      avatarUrl: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
-      token: 'gh_oauth_session_active',
-      createdAt: new Date().toISOString(),
-    };
-    await SettingsStorage.saveUser(fallbackProfile);
-    return fallbackProfile;
+    return null;
   }
 
   /**

@@ -61,6 +61,7 @@ export class QuickKodeServer {
           },
           github: {
             configured: Boolean(process.env.GITHUB_CLIENT_ID),
+            clientId: process.env.GITHUB_CLIENT_ID || null,
           },
         }),
       );
@@ -69,9 +70,11 @@ export class QuickKodeServer {
 
     if (req.method === 'GET' && url.pathname === '/auth/github') {
       const redirectUri = url.searchParams.get('redirect_uri') || 'quickkode://auth/github';
-      const clientId = process.env.GITHUB_CLIENT_ID;
+      const clientId = url.searchParams.get('client_id') || process.env.GITHUB_CLIENT_ID;
       if (clientId) {
-        const ghAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,read:user`;
+        const host = req.headers.host || '192.168.1.80:4000';
+        const serverCallbackUri = `http://${host}/auth/github/callback`;
+        const ghAuthUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(serverCallbackUri)}&scope=${encodeURIComponent('repo,read:user,user:email')}&state=${encodeURIComponent(redirectUri)}`;
         res.writeHead(302, { Location: ghAuthUrl });
         res.end();
         return;
@@ -87,6 +90,142 @@ export class QuickKodeServer {
       res.writeHead(302, { Location: callbackUrl.toString() });
       res.end();
       return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/auth/github/callback') {
+      const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state') || 'quickkode://auth/github';
+      const error = url.searchParams.get('error');
+
+      if (error) {
+        const errUrl = new URL(state);
+        errUrl.searchParams.set('error', error);
+        res.writeHead(302, { Location: errUrl.toString() });
+        res.end();
+        return;
+      }
+
+      if (!code) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing authorization code from GitHub' }));
+        return;
+      }
+
+      const clientId = process.env.GITHUB_CLIENT_ID;
+      const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+      const host = req.headers.host || '192.168.1.80:4000';
+      const serverCallbackUri = `http://${host}/auth/github/callback`;
+
+      if (!clientId || !clientSecret) {
+        const missingUrl = new URL(state);
+        missingUrl.searchParams.set('error', 'GITHUB_CLIENT_SECRET not configured on server');
+        res.writeHead(302, { Location: missingUrl.toString() });
+        res.end();
+        return;
+      }
+
+      try {
+        const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            code,
+            redirect_uri: serverCallbackUri,
+          }),
+        });
+
+        if (!tokenRes.ok) {
+          const errText = await tokenRes.text();
+          console.error('[OAuth] GitHub token exchange failed:', errText);
+          const errUrl = new URL(state);
+          errUrl.searchParams.set('error', 'GitHub token exchange failed');
+          res.writeHead(302, { Location: errUrl.toString() });
+          res.end();
+          return;
+        }
+
+        const tokenData = (await tokenRes.json()) as {
+          access_token?: string;
+          token_type?: string;
+          error?: string;
+          error_description?: string;
+        };
+
+        if (tokenData.error || !tokenData.access_token) {
+          console.error('[OAuth] GitHub returned token error:', tokenData);
+          const errUrl = new URL(state);
+          errUrl.searchParams.set('error', tokenData.error_description || tokenData.error || 'Token error');
+          res.writeHead(302, { Location: errUrl.toString() });
+          res.end();
+          return;
+        }
+
+        // Fetch user profile from GitHub API
+        let username = 'github-user';
+        let displayName = 'GitHub Developer';
+        let email: string | undefined = undefined;
+        let avatarUrl = 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+
+        try {
+          const userRes = await fetch('https://api.github.com/user', {
+            headers: {
+              Authorization: `Bearer ${tokenData.access_token}`,
+              'User-Agent': 'QuickKode-Orchestrator',
+            },
+          });
+          if (userRes.ok) {
+            const userData = (await userRes.json()) as {
+              login?: string;
+              name?: string;
+              email?: string;
+              avatar_url?: string;
+            };
+            username = userData.login || username;
+            displayName = userData.name || userData.login || displayName;
+            email = userData.email || undefined;
+            avatarUrl = userData.avatar_url || avatarUrl;
+          }
+
+          if (!email) {
+            const emailRes = await fetch('https://api.github.com/user/emails', {
+              headers: {
+                Authorization: `Bearer ${tokenData.access_token}`,
+                'User-Agent': 'QuickKode-Orchestrator',
+              },
+            });
+            if (emailRes.ok) {
+              const emails = (await emailRes.json()) as Array<{ email: string; primary: boolean }>;
+              const primary = emails.find((e) => e.primary);
+              if (primary) email = primary.email;
+            }
+          }
+        } catch (uErr) {
+          console.warn('[OAuth] Failed to fetch GitHub userinfo:', uErr);
+        }
+
+        const successUrl = new URL(state);
+        successUrl.searchParams.set('token', tokenData.access_token);
+        successUrl.searchParams.set('username', username);
+        successUrl.searchParams.set('name', displayName);
+        if (email) successUrl.searchParams.set('email', email);
+        successUrl.searchParams.set('avatar_url', avatarUrl);
+
+        res.writeHead(302, { Location: successUrl.toString() });
+        res.end();
+        return;
+      } catch (ex: unknown) {
+        console.error('[OAuth] Exception during GitHub code exchange:', ex);
+        const errUrl = new URL(state);
+        errUrl.searchParams.set('error', 'Authentication exchange error');
+        res.writeHead(302, { Location: errUrl.toString() });
+        res.end();
+        return;
+      }
     }
 
     if (req.method === 'GET' && url.pathname === '/auth/google') {

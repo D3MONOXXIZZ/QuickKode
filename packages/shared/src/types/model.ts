@@ -40,6 +40,8 @@ export interface BYOKConfig {
   googleClientSecret?: string;
   geminiApiKey?: string;
   githubToken?: string;
+  githubClientId?: string;
+  githubClientSecret?: string;
   openAiApiKey?: string;
   anthropicApiKey?: string;
   deepseekApiKey?: string;
