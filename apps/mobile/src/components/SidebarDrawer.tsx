@@ -159,7 +159,16 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 </TouchableOpacity>
 
                 <Text style={styles.sectionHeader}>CONNECTED REPOSITORIES</Text>
-                {projects.map((proj) => {
+                {projects.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyIcon}>📦</Text>
+                    <Text style={styles.emptyTitle}>No Repositories Connected</Text>
+                    <Text style={styles.emptyText}>
+                      Import any GitHub repo above to clone into your cloud microVM workspace.
+                    </Text>
+                  </View>
+                ) : (
+                  projects.map((proj) => {
                   const isSelected = proj.id === activeProjectId;
                   const syncColor =
                     proj.syncStatus === 'in_sync'
@@ -203,7 +212,8 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       </View>
                     </TouchableOpacity>
                   );
-                })}
+                })
+              )}
               </View>
             )}
           </ScrollView>
@@ -642,5 +652,30 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
+  },
+  emptyCard: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.radius.md,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    marginTop: 8,
+  },
+  emptyIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  emptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

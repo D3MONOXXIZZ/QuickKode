@@ -50,54 +50,68 @@ export const DiffViewerModal: React.FC<DiffViewerModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.diffScroll} showsVerticalScrollIndicator={false}>
-            {diffs.map((diff, index) => {
-              const isExpanded = expandedIndex === index;
+          {diffs.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <Text style={styles.emptyIconText}>✓</Text>
+              </View>
+              <Text style={styles.emptyTitle}>Workspace Clean</Text>
+              <Text style={styles.emptySubtitle}>
+                No pending agent edits or unstaged changes detected.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.diffScroll} showsVerticalScrollIndicator={false}>
+              {diffs.map((diff, index) => {
+                const isExpanded = expandedIndex === index;
 
-              return (
-                <View key={diff.path || index} style={styles.fileCard}>
-                  <TouchableOpacity
-                    style={styles.fileHeader}
-                    onPress={() => toggleFile(index)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.fileIcon}>{isExpanded ? '▾' : '▸'}</Text>
-                    <Text style={styles.fileName} numberOfLines={1}>
-                      {diff.path}
-                    </Text>
+                return (
+                  <View key={diff.path || index} style={styles.fileCard}>
+                    <TouchableOpacity
+                      style={styles.fileHeader}
+                      onPress={() => toggleFile(index)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.fileIcon}>{isExpanded ? '▾' : '▸'}</Text>
+                      <Text style={styles.fileName} numberOfLines={1}>
+                        {diff.path}
+                      </Text>
 
-                    <View style={styles.fileStats}>
-                      <Text style={styles.addStatText}>+{diff.additions}</Text>
-                      <Text style={styles.statSeparator}>/</Text>
-                      <Text style={styles.delStatText}>-{diff.deletions}</Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  {isExpanded && (
-                    <ScrollView horizontal style={styles.diffHunkBox} showsHorizontalScrollIndicator={false}>
-                      <View style={styles.diffLinesCol}>
-                        <Text style={styles.rawDiff}>{diff.diffHunks}</Text>
+                      <View style={styles.fileStats}>
+                        <Text style={styles.addStatText}>+{diff.additions}</Text>
+                        <Text style={styles.statSeparator}>/</Text>
+                        <Text style={styles.delStatText}>-{diff.deletions}</Text>
                       </View>
-                    </ScrollView>
-                  )}
-                </View>
-              );
-            })}
-          </ScrollView>
+                    </TouchableOpacity>
+
+                    {isExpanded && (
+                      <ScrollView horizontal style={styles.diffHunkBox} showsHorizontalScrollIndicator={false}>
+                        <View style={styles.diffLinesCol}>
+                          <Text style={styles.rawDiff}>{diff.diffHunks}</Text>
+                        </View>
+                      </ScrollView>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
 
           {/* Action Gate Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.approveBtn, isPushing && styles.btnDisabled]}
-              onPress={onApproveAndPush}
-              disabled={isPushing}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.approveBtnText}>
-                {isPushing ? 'Syncing to Cloud Workspace...' : '✓ Approve & Push Changes'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {diffs.length > 0 && (
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.approveBtn, isPushing && styles.btnDisabled]}
+                onPress={onApproveAndPush}
+                disabled={isPushing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.approveBtnText}>
+                  {isPushing ? 'Syncing to Cloud Workspace...' : '✓ Approve & Push Changes'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -262,5 +276,39 @@ const styles = StyleSheet.create({
     color: '#0A0B0E',
     fontSize: 14,
     fontWeight: '700',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.accentEmeraldDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  emptyIconText: {
+    fontSize: 24,
+    color: theme.colors.accentEmerald,
+    fontWeight: '700',
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

@@ -29,10 +29,16 @@ export const PromptBar: React.FC<PromptBarProps> = ({
   };
 
   const isTurbo = executionMode === 'turbo';
-  const modelLabel =
-    activeModel.provider === 'antigravity'
-      ? 'Antigravity 2.5'
-      : activeModel.modelName.replace('-coder', '').replace('-sonnet', '');
+  const hasKey = Boolean(
+    (activeModel.provider === 'antigravity' && activeModel.geminiApiKey) ||
+    (activeModel.provider === 'opencode' && activeModel.apiKey),
+  );
+
+  const modelLabel = hasKey
+    ? activeModel.provider === 'antigravity'
+      ? 'Gemini 2.0 Flash'
+      : activeModel.modelName.replace('-coder-v2', '').replace('-3-5-sonnet', '')
+    : 'Configure AI Key';
 
   const hasText = text.trim().length > 0;
 
@@ -41,12 +47,16 @@ export const PromptBar: React.FC<PromptBarProps> = ({
       {/* Top Floating Mini Controls */}
       <View style={styles.controlsRow}>
         <TouchableOpacity
-          style={styles.modelBadge}
+          style={[styles.modelBadge, !hasKey && styles.modelBadgeWarning]}
           onPress={onOpenModelSelector}
           activeOpacity={0.7}
         >
-          <Text style={styles.sparkIcon}>✦</Text>
-          <Text style={styles.modelBadgeText}>{modelLabel}</Text>
+          <Text style={[styles.sparkIcon, !hasKey && styles.sparkIconWarning]}>
+            {hasKey ? '✦' : '⚠️'}
+          </Text>
+          <Text style={[styles.modelBadgeText, !hasKey && styles.modelBadgeTextWarning]}>
+            {modelLabel}
+          </Text>
           <Text style={styles.dropdownChevron}>⌄</Text>
         </TouchableOpacity>
 
@@ -129,15 +139,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
   },
+  modelBadgeWarning: {
+    backgroundColor: theme.colors.accentAmberDim,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
   sparkIcon: {
     color: theme.colors.accentPrimaryLight,
     fontSize: 12,
     marginRight: 5,
   },
+  sparkIconWarning: {
+    color: theme.colors.accentAmber,
+  },
   modelBadgeText: {
     color: theme.colors.textPrimary,
     fontSize: 12,
     fontWeight: '600',
+  },
+  modelBadgeTextWarning: {
+    color: theme.colors.accentAmber,
+    fontWeight: '700',
   },
   dropdownChevron: {
     color: theme.colors.textMuted,

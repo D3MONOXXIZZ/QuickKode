@@ -120,7 +120,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     );
   };
 
-  const showHero = messages.length <= 1;
+  const showHero = messages.length === 0;
 
   return (
     <View style={styles.screen}>

@@ -137,7 +137,17 @@ export const FileTreeModal: React.FC<FileTreeModalProps> = ({
           </View>
 
           <ScrollView style={styles.treeScroll} showsVerticalScrollIndicator={false}>
-            {tree ? renderNode(tree) : <Text style={styles.loadingText}>Connecting to cloud workspace...</Text>}
+            {tree && (tree.children?.length ?? 0) > 0 ? (
+              renderNode(tree)
+            ) : (
+              <View style={styles.emptyTreeBox}>
+                <Text style={styles.emptyTreeIcon}>📂</Text>
+                <Text style={styles.emptyTreeTitle}>Workspace is Empty</Text>
+                <Text style={styles.emptyTreeSubtitle}>
+                  Import a GitHub repository via the sidebar or send a prompt to generate files.
+                </Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -271,5 +281,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
     fontSize: 13,
+  },
+  emptyTreeBox: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  emptyTreeIcon: {
+    fontSize: 36,
+    marginBottom: 12,
+  },
+  emptyTreeTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptyTreeSubtitle: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 260,
   },
 });

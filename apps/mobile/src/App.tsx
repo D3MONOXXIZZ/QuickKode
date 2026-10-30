@@ -41,30 +41,13 @@ export const App: React.FC = () => {
 
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [pendingDiffs, setPendingDiffs] = useState<FileDiff[]>([]);
-  const [fileTree, setFileTree] = useState<FileTreeNode | null>({
-    name: 'my-mobile-app',
-    path: '.',
-    isDirectory: true,
-    children: [
-      {
-        name: 'src',
-        path: 'src',
-        isDirectory: true,
-        children: [
-          { name: 'App.tsx', path: 'src/App.tsx', isDirectory: false, changeStatus: 'modified' },
-          { name: 'index.ts', path: 'src/index.ts', isDirectory: false },
-        ],
-      },
-      { name: 'package.json', path: 'package.json', isDirectory: false },
-      { name: 'README.md', path: 'README.md', isDirectory: false },
-    ],
-  });
+  const [fileTree, setFileTree] = useState<FileTreeNode | null>(null);
   const [editingFile, setEditingFile] = useState<{ path: string; content: string } | null>(null);
 
   const [activeModel, setActiveModel] = useState<ActiveModelConfig>({
     provider: 'antigravity',
     modelName: 'antigravity-gemini-2.5',
-    authType: 'pc_account',
+    authType: 'api_key',
   });
 
   const [byokConfig, setByokConfig] = useState<BYOKConfig>(DEFAULT_BYOK_CONFIG);
@@ -72,11 +55,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     void SettingsStorage.loadConfig().then((saved) => {
       setByokConfig(saved);
-      if (saved.antigravityAuthType === 'pc_account') {
+      if (saved.geminiApiKey) {
         setActiveModel({
           provider: 'antigravity',
           modelName: 'antigravity-gemini-2.5',
-          authType: 'pc_account',
+          authType: 'api_key',
           geminiApiKey: saved.geminiApiKey,
         });
       } else if (saved.deepseekApiKey) {
@@ -84,6 +67,18 @@ export const App: React.FC = () => {
           provider: 'opencode',
           modelName: 'deepseek-coder-v2',
           apiKey: saved.deepseekApiKey,
+        });
+      } else if (saved.anthropicApiKey) {
+        setActiveModel({
+          provider: 'opencode',
+          modelName: 'claude-3-5-sonnet',
+          apiKey: saved.anthropicApiKey,
+        });
+      } else if (saved.openAiApiKey) {
+        setActiveModel({
+          provider: 'opencode',
+          modelName: 'gpt-4o',
+          apiKey: saved.openAiApiKey,
         });
       }
     });
@@ -95,34 +90,18 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  const [projects, setProjects] = useState<ClientProject[]>([
-    {
-      id: 'project-primary',
-      name: 'my-mobile-app',
-      source: 'google_drive',
-      syncStatus: 'in_sync',
-      activeBranch: 'main',
-    },
-  ]);
+  const [projects, setProjects] = useState<ClientProject[]>([]);
 
   const [threads, setThreads] = useState<ChatThread[]>([
     {
       id: 'thread-1',
       sessionId: 'session-primary-001',
-      projectId: 'project-primary',
-      title: 'Initial Feature Scaffold',
+      projectId: 'scratchpad',
+      title: 'New Coding Session',
       modelConfig: activeModel,
       mode: 'turbo',
       lastMessageAt: new Date().toISOString(),
-      messages: [
-        {
-          id: 'msg-1',
-          sessionId: 'session-primary-001',
-          role: 'assistant',
-          content: 'Hello! I am connected to your Gemini Antigravity (PC Account). How can I assist with your code today?',
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      messages: [],
     },
   ]);
 
