@@ -19,6 +19,7 @@ import { FileTreeModal } from './components/FileTreeModal';
 import { CodeEditorModal } from './components/CodeEditorModal';
 import { DiffViewerModal } from './components/DiffViewerModal';
 import { LivePreviewModal } from './components/LivePreviewModal';
+import { SettingsStorage, DEFAULT_BYOK_CONFIG } from './services/storage';
 
 export const App: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState('session-primary-001');
@@ -63,9 +64,27 @@ export const App: React.FC = () => {
     authType: 'pc_account',
   });
 
-  const [byokConfig, setByokConfig] = useState<BYOKConfig>({
-    antigravityAuthType: 'pc_account',
-  });
+  const [byokConfig, setByokConfig] = useState<BYOKConfig>(DEFAULT_BYOK_CONFIG);
+
+  useEffect(() => {
+    void SettingsStorage.loadConfig().then((saved) => {
+      setByokConfig(saved);
+      if (saved.antigravityAuthType === 'pc_account') {
+        setActiveModel({
+          provider: 'antigravity',
+          modelName: 'antigravity-gemini-2.5',
+          authType: 'pc_account',
+          geminiApiKey: saved.geminiApiKey,
+        });
+      } else if (saved.deepseekApiKey) {
+        setActiveModel({
+          provider: 'opencode',
+          modelName: 'deepseek-coder-v2',
+          apiKey: saved.deepseekApiKey,
+        });
+      }
+    });
+  }, []);
 
   const [projects, setProjects] = useState<ClientProject[]>([
     {
@@ -100,8 +119,9 @@ export const App: React.FC = () => {
 
   const socketRef = useRef<QuickKodeSocketClient | null>(null);
 
-  const initSocketConnection = () => {
-    const socket = new QuickKodeSocketClient();
+  const initSocketConnection = (targetUrl?: string) => {
+    const url = targetUrl ?? byokConfig.orchestratorServerUrl ?? 'ws://192.168.1.80:4000';
+    const socket = new QuickKodeSocketClient(url);
     socketRef.current = socket;
 
     socket.on('connection:open', () => {
@@ -298,6 +318,7 @@ export const App: React.FC = () => {
       prompt,
       mode: executionMode,
       modelConfig: activeModel,
+      byok: byokConfig,
     });
   };
 
@@ -435,18 +456,39 @@ export const App: React.FC = () => {
           onClose={() => setIsSettingsModalOpen(false)}
           config={byokConfig}
           onSave={(newConfig) => {
+            const previousUrl = byokConfig.orchestratorServerUrl;
             setByokConfig(newConfig);
+            void SettingsStorage.saveConfig(newConfig);
+
+            if (newConfig.orchestratorServerUrl && newConfig.orchestratorServerUrl !== previousUrl) {
+              socketRef.current?.disconnect();
+              initSocketConnection(newConfig.orchestratorServerUrl);
+            }
+
             if (newConfig.antigravityAuthType === 'pc_account') {
               setActiveModel({
                 provider: 'antigravity',
                 modelName: 'antigravity-gemini-2.5',
                 authType: 'pc_account',
+                geminiApiKey: newConfig.geminiApiKey,
               });
             } else if (newConfig.deepseekApiKey) {
               setActiveModel({
                 provider: 'opencode',
                 modelName: 'deepseek-coder-v2',
                 apiKey: newConfig.deepseekApiKey,
+              });
+            } else if (newConfig.anthropicApiKey) {
+              setActiveModel({
+                provider: 'opencode',
+                modelName: 'claude-3-5-sonnet',
+                apiKey: newConfig.anthropicApiKey,
+              });
+            } else if (newConfig.openAiApiKey) {
+              setActiveModel({
+                provider: 'opencode',
+                modelName: 'gpt-4o',
+                apiKey: newConfig.openAiApiKey,
               });
             }
           }}

@@ -1,5 +1,6 @@
 export * from './types/client';
 export * from './services/socketClient';
+export * from './services/storage';
 export * from './components/PromptBar';
 export * from './components/ThoughtWidget';
 export * from './components/SidebarDrawer';

@@ -96,10 +96,19 @@ export class SessionHub {
     }
   }
 
-  async ensureSessionContext(sessionId: string, projectId: string, useMock = false): Promise<ActiveSessionContext> {
+  async ensureSessionContext(
+    sessionId: string,
+    projectId: string,
+    useMock = false,
+    e2bApiKey?: string,
+  ): Promise<ActiveSessionContext> {
     let ctx = this.activeContexts.get(sessionId);
     if (!ctx) {
-      const sandbox = await this.sandboxManager.createSandbox({ sessionId, useMock });
+      const sandbox = await this.sandboxManager.createSandbox({
+        sessionId,
+        useMock,
+        apiKey: e2bApiKey,
+      });
       const session: Session = {
         id: sessionId,
         projectId,
@@ -156,9 +165,22 @@ export class SessionHub {
             return;
           }
 
-          const { sessionId, prompt, mode, modelConfig } = validation.data;
-          const ctx = await this.ensureSessionContext(sessionId, 'default-project', useMock);
-          const controller = this.controllers.get(sessionId) ?? new TurboModeController(ctx.sandbox, this.agentEngine, this.syncEngine);
+          const { sessionId, prompt, mode, modelConfig, byok } = validation.data;
+          const ctx = await this.ensureSessionContext(sessionId, 'default-project', useMock, byok?.e2bApiKey);
+          if (byok?.googleDriveFolderId) {
+            ctx.driveFolderId = byok.googleDriveFolderId;
+          }
+
+          // If user configured Gemini API key in-app, use it
+          const activeModelConfig = { ...modelConfig };
+          if (activeModelConfig.provider === 'antigravity' && byok?.geminiApiKey) {
+            activeModelConfig.authType = 'api_key';
+            activeModelConfig.geminiApiKey = byok.geminiApiKey;
+          }
+
+          const controller =
+            this.controllers.get(sessionId) ??
+            new TurboModeController(ctx.sandbox, this.agentEngine, this.syncEngine);
 
           // Run workflow asynchronously in background
           void (async () => {
@@ -168,7 +190,7 @@ export class SessionHub {
                 projectId: ctx.project.id,
                 prompt,
                 mode,
-                modelConfig,
+                modelConfig: activeModelConfig,
                 driveFolderId: ctx.driveFolderId,
                 useMock,
                 onThought: (thought: AgentThought) => {

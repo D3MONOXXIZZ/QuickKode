@@ -1,6 +1,7 @@
 import type {
   ActiveModelConfig,
   ExecutionMode,
+  BYOKConfig,
 } from '@quickkode/shared';
 
 export type SocketEventHandler = (payload: any) => void;
@@ -98,6 +99,7 @@ export class QuickKodeSocketClient {
     prompt: string;
     mode: ExecutionMode;
     modelConfig: ActiveModelConfig;
+    byok?: BYOKConfig;
   }): void {
     this.send('agent:prompt', options);
   }

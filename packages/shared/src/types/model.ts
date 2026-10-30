@@ -42,4 +42,7 @@ export interface BYOKConfig {
   anthropicApiKey?: string;
   deepseekApiKey?: string;
   customEndpoint?: string;
+  e2bApiKey?: string;
+  googleDriveFolderId?: string;
+  orchestratorServerUrl?: string;
 }

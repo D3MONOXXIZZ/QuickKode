@@ -42,6 +42,9 @@ export const BYOKConfigSchema = z.object({
   anthropicApiKey: z.string().optional(),
   deepseekApiKey: z.string().optional(),
   customEndpoint: z.string().url().optional(),
+  e2bApiKey: z.string().optional(),
+  googleDriveFolderId: z.string().optional(),
+  orchestratorServerUrl: z.string().optional(),
 });
 
 export const PromptPayloadSchema = z.object({
