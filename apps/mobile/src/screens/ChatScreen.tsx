@@ -10,6 +10,7 @@ export interface ChatScreenProps {
   activeModel: ActiveModelConfig;
   executionMode: ExecutionMode;
   isLoading: boolean;
+  isConnected?: boolean;
   activePreview?: ActivePreview | null;
   hasDiffs?: boolean;
   onSendPrompt: (prompt: string) => void;
@@ -19,6 +20,7 @@ export interface ChatScreenProps {
   onOpenPreview: (preview: ActivePreview) => void;
   onOpenFileTree: () => void;
   onOpenDiffs: () => void;
+  onReconnect?: () => void;
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({
@@ -27,6 +29,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   activeModel,
   executionMode,
   isLoading,
+  isConnected = false,
   activePreview,
   hasDiffs,
   onSendPrompt,
@@ -36,6 +39,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   onOpenPreview,
   onOpenFileTree,
   onOpenDiffs,
+  onReconnect,
 }) => {
   const renderMessageItem = ({ item }: { item: ChatMessage }) => {
     const isUser = item.role === 'user';
@@ -68,7 +72,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           <Text style={styles.projectName} numberOfLines={1}>
             {projectName}
           </Text>
-          <Text style={styles.sessionStatus}>🟢 Active Cloud Session</Text>
+          <TouchableOpacity onPress={onReconnect} disabled={isConnected}>
+            <Text style={[styles.sessionStatus, !isConnected && styles.sessionStatusOffline]}>
+              {isConnected ? '🟢 Active Cloud Session' : '🟠 Offline (Tap to Reconnect)'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.headerActions}>
@@ -147,6 +155,9 @@ const styles = StyleSheet.create({
     color: '#34A853',
     fontSize: 11,
     marginTop: 1,
+  },
+  sessionStatusOffline: {
+    color: '#FBBC04',
   },
   headerActions: {
     flexDirection: 'row',

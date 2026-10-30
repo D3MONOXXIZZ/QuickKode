@@ -130,11 +130,13 @@ export class SessionHub {
     try {
       const parsed = JSON.parse(rawData) as InboundMessage;
       const { event, payload } = parsed;
+      console.log(`[SessionHub] Inbound event: ${event}`, payload);
 
       switch (event) {
         case 'session:join': {
           const { sessionId } = payload as { sessionId: string };
           this.joinSession(socket, sessionId);
+          console.log(`[SessionHub] Client joined room: ${sessionId}`);
           break;
         }
 
@@ -147,6 +149,7 @@ export class SessionHub {
         case 'agent:prompt': {
           const validation = PromptPayloadSchema.safeParse(payload);
           if (!validation.success) {
+            console.error('[SessionHub] Prompt validation failed:', validation.error.format());
             this.sendToSocket(socket, 'session:error', {
               error: `Invalid prompt request: ${validation.error.message}`,
             });

@@ -33,6 +33,7 @@ export const App: React.FC = () => {
   const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
   const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [pendingDiffs, setPendingDiffs] = useState<FileDiff[]>([]);
@@ -99,14 +100,54 @@ export const App: React.FC = () => {
 
   const socketRef = useRef<QuickKodeSocketClient | null>(null);
 
-  useEffect(() => {
+  const initSocketConnection = () => {
     const socket = new QuickKodeSocketClient();
     socketRef.current = socket;
 
-    void socket.connect().then(() => {
+    socket.on('connection:open', () => {
+      setIsConnected(true);
       socket.joinSession(activeSessionId);
-    }).catch(() => {
-      // Offline fallback
+    });
+
+    socket.on('connection:close', () => {
+      setIsConnected(false);
+    });
+
+    socket.on('connection:error', () => {
+      setIsConnected(false);
+    });
+
+    void socket
+      .connect()
+      .then(() => {
+        setIsConnected(true);
+        socket.joinSession(activeSessionId);
+      })
+      .catch((err) => {
+        console.warn('[QuickKode] Socket connection failed:', err);
+        setIsConnected(false);
+      });
+
+    socket.on('session:error', (payload: { error: string }) => {
+      setIsLoading(false);
+      setThreads((prev) =>
+        prev.map((t) => {
+          if (t.sessionId !== activeSessionId) return t;
+          return {
+            ...t,
+            messages: [
+              ...t.messages,
+              {
+                id: `msg-err-${Date.now()}`,
+                sessionId: activeSessionId,
+                role: 'assistant',
+                content: `⚠️ Error from Cloud Server: ${payload.error}`,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          };
+        }),
+      );
     });
 
     socket.on('agent:thought', (payload: { title: string; content: string }) => {
@@ -182,7 +223,16 @@ export const App: React.FC = () => {
     return () => {
       socket.disconnect();
     };
+  };
+
+  useEffect(() => {
+    return initSocketConnection();
   }, [activeSessionId]);
+
+  const handleReconnect = () => {
+    socketRef.current?.disconnect();
+    initSocketConnection();
+  };
 
   const activeThread = threads.find((t) => t.sessionId === activeSessionId) ?? threads[0];
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? projects[0];
@@ -216,6 +266,32 @@ export const App: React.FC = () => {
         };
       }),
     );
+
+    if (!socketRef.current?.connected) {
+      setTimeout(() => {
+        setIsLoading(false);
+        setThreads((prev) =>
+          prev.map((t) => {
+            if (t.sessionId !== activeSessionId) return t;
+            return {
+              ...t,
+              messages: [
+                ...t.messages,
+                {
+                  id: `asst-offline-${Date.now()}`,
+                  sessionId: activeSessionId,
+                  role: 'assistant',
+                  content:
+                    '⚠️ Unable to reach cloud orchestrator at ws://192.168.1.80:4000. Please ensure your mobile phone and computer are on the same Wi-Fi network, then tap the header status to retry.',
+                  timestamp: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        );
+      }, 800);
+      return;
+    }
 
     socketRef.current?.sendPrompt({
       sessionId: activeSessionId,
@@ -304,6 +380,7 @@ export const App: React.FC = () => {
           activeModel={activeModel}
           executionMode={executionMode}
           isLoading={isLoading}
+          isConnected={isConnected}
           activePreview={activePreview}
           hasDiffs={pendingDiffs.length > 0}
           onSendPrompt={handleSendPrompt}
@@ -313,6 +390,7 @@ export const App: React.FC = () => {
           onOpenPreview={handleOpenPreview}
           onOpenFileTree={handleOpenFileTree}
           onOpenDiffs={handleOpenDiffs}
+          onReconnect={handleReconnect}
         />
 
         <SidebarDrawer

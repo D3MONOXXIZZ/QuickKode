@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet } from 'react-native';
 import type { ClientProject, ChatThread, DrawerViewMode } from '../types/client';
 import type { ActiveModelConfig } from '@quickkode/shared';
 
@@ -46,11 +46,12 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       : `✦ OpenCode (${activeModel.modelName})`;
 
   return (
-    <View style={styles.overlay}>
-      <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
+    <Modal visible={isOpen} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
-      <View style={styles.drawer}>
-        {/* Top: Morphing Model Badge */}
+        <View style={styles.drawer}>
+          {/* Top: Morphing Model Badge */}
         <TouchableOpacity style={styles.modelHeaderPill} onPress={toggleViewMode} activeOpacity={0.8}>
           <View style={styles.modelPillTopRow}>
             <Text style={styles.modelPillTitle} numberOfLines={1}>
@@ -151,6 +152,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         </View>
       </View>
     </View>
+    </Modal>
   );
 };
 

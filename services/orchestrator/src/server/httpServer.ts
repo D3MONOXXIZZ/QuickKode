@@ -58,6 +58,7 @@ export class QuickKodeServer {
   private setupWebSocket(): void {
     this.wss.on('connection', (socket: WebSocket) => {
       const client = this.sessionHub.registerClient(socket);
+      console.log(`[QuickKodeServer] WebSocket Client connected: ${client.id}`);
 
       socket.on('message', (data: Buffer | string) => {
         const text = data.toString('utf-8');
@@ -65,6 +66,7 @@ export class QuickKodeServer {
       });
 
       socket.on('close', () => {
+        console.log(`[QuickKodeServer] WebSocket Client disconnected: ${client.id}`);
         this.sessionHub.unregisterClient(client.id);
       });
 
@@ -77,11 +79,11 @@ export class QuickKodeServer {
 
   async start(port = 4000): Promise<number> {
     return new Promise((resolve) => {
-      this.httpServer.listen(port, () => {
+      this.httpServer.listen(port, '0.0.0.0', () => {
         this.isListening = true;
         const address = this.httpServer.address();
         const actualPort = typeof address === 'object' && address ? address.port : port;
-        console.log(`[QuickKodeServer] HTTP & WebSocket Server listening on port ${actualPort}`);
+        console.log(`[QuickKodeServer] HTTP & WebSocket Server listening on 0.0.0.0:${actualPort}`);
         resolve(actualPort);
       });
     });

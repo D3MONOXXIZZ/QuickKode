@@ -45,7 +45,7 @@ export const BYOKConfigSchema = z.object({
 });
 
 export const PromptPayloadSchema = z.object({
-  sessionId: z.string().uuid(),
+  sessionId: z.string().min(1, 'Session ID required'),
   prompt: z.string().min(1, 'Prompt cannot be empty'),
   mode: ExecutionModeSchema.default('standard'),
   modelConfig: ActiveModelConfigSchema,
@@ -58,12 +58,12 @@ export const GitHubImportPayloadSchema = z.object({
 });
 
 export const FileWritePayloadSchema = z.object({
-  sessionId: z.string().uuid(),
+  sessionId: z.string().min(1, 'Session ID required'),
   path: z.string().min(1, 'File path required'),
   content: z.string(),
 });
 
 export const ApprovePushPayloadSchema = z.object({
-  sessionId: z.string().uuid(),
+  sessionId: z.string().min(1, 'Session ID required'),
   commitMessage: z.string().optional(),
 });
