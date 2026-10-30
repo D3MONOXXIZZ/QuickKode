@@ -4,15 +4,21 @@
   "description": "QuickKode Gemini-Style Mobile Client (Expo / React Native)",
   "main": "index.js",
   "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "npx tsx tests/mobileUi.test.ts && npx tsx tests/editorAndPreview.test.ts"
   },
   "dependencies": {
     "@quickkode/shared": "*",
+    "expo": "^51.0.0",
     "react": "^18.2.0",
     "react-native": "^0.74.0"
   },
   "devDependencies": {
+    "@expo/ngrok": "^4.1.0",
     "@types/react": "^18.2.0",
     "@types/react-native": "^0.73.0",
     "typescript": "^5.5.4"
