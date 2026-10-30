@@ -1,0 +1,19 @@
+{
+  "name": "@quickkode/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript contracts, types, and schemas for QuickKode",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npx tsx tests/schemas.test.ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

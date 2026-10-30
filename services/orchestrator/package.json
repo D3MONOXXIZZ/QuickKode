@@ -1,0 +1,23 @@
+{
+  "name": "@quickkode/orchestrator",
+  "version": "1.0.0",
+  "description": "Backend session orchestrator, E2B manager, and Drive sync service",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npx tsx tests/sandbox.test.ts && npx tsx tests/git.test.ts && npx tsx tests/driveSync.test.ts && npx tsx tests/agent.test.ts && npx tsx tests/turboMode.test.ts && npx tsx tests/preview.test.ts && npx tsx tests/socketHub.test.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@e2b/code-interpreter": "^2.9.0",
+    "@quickkode/shared": "*",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.5.4"
+  }
+}

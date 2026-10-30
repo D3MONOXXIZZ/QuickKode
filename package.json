@@ -1,0 +1,21 @@
+{
+  "name": "quickkode-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mobile-first coding platform orchestrating OpenCode & Antigravity agents with Drive sync, GitHub, and live mobile testing.",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@quickkode/mobile",
+  "version": "1.0.0",
+  "description": "QuickKode Gemini-Style Mobile Client (Expo / React Native)",
+  "main": "index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "npx tsx tests/mobileUi.test.ts && npx tsx tests/editorAndPreview.test.ts"
+  },
+  "dependencies": {
+    "@quickkode/shared": "*",
+    "react": "^18.2.0",
+    "react-native": "^0.74.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-native": "^0.73.0",
+    "typescript": "^5.5.4"
+  }
+}
