@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import type { ExecutionMode, ActiveModelConfig } from '@quickkode/shared';
+import { theme } from '../theme';
 
 export interface PromptBarProps {
   onSend: (prompt: string) => void;
@@ -30,15 +31,23 @@ export const PromptBar: React.FC<PromptBarProps> = ({
   const isTurbo = executionMode === 'turbo';
   const modelLabel =
     activeModel.provider === 'antigravity'
-      ? 'Antigravity (PC)'
+      ? 'Antigravity 2.5'
       : activeModel.modelName.replace('-coder', '').replace('-sonnet', '');
+
+  const hasText = text.trim().length > 0;
 
   return (
     <View style={styles.container}>
-      {/* Control Pills: Model selector & Turbo mode toggle */}
+      {/* Top Floating Mini Controls */}
       <View style={styles.controlsRow}>
-        <TouchableOpacity style={styles.modelBadge} onPress={onOpenModelSelector} activeOpacity={0.7}>
-          <Text style={styles.modelBadgeText}>✦ {modelLabel}</Text>
+        <TouchableOpacity
+          style={styles.modelBadge}
+          onPress={onOpenModelSelector}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.sparkIcon}>✦</Text>
+          <Text style={styles.modelBadgeText}>{modelLabel}</Text>
+          <Text style={styles.dropdownChevron}>⌄</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -46,32 +55,49 @@ export const PromptBar: React.FC<PromptBarProps> = ({
           onPress={onToggleMode}
           activeOpacity={0.7}
         >
+          <View style={[styles.modeDot, isTurbo ? styles.dotActive : styles.dotInactive]} />
           <Text style={[styles.turboText, isTurbo ? styles.turboTextActive : styles.turboTextInactive]}>
-            ⚡ Turbo: {isTurbo ? 'ON' : 'OFF'}
+            {isTurbo ? '⚡ Turbo Mode' : '🛡️ Standard Mode'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Main Gemini Capsule Input Bar */}
+      {/* Main Gemini Capsule Input Container */}
       <View style={styles.capsule}>
         <TextInput
           style={styles.input}
-          placeholder="Ask Antigravity or OpenCode..."
-          placeholderTextColor="#8E918F"
+          placeholder="Ask Antigravity or describe a code change..."
+          placeholderTextColor={theme.colors.textMuted}
           value={text}
           onChangeText={setText}
           multiline
           maxLength={4000}
           editable={!isLoading}
+          textAlignVertical="center"
         />
 
+        {hasText && (
+          <TouchableOpacity
+            style={styles.clearBtn}
+            onPress={() => setText('')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.clearBtnText}>✕</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
-          style={[styles.sendButton, text.trim().length > 0 && !isLoading ? styles.sendActive : styles.sendDisabled]}
+          style={[
+            styles.sendButton,
+            hasText && !isLoading ? styles.sendActive : styles.sendDisabled,
+          ]}
           onPress={handleSend}
-          disabled={!text.trim() || isLoading}
+          disabled={!hasText || isLoading}
           activeOpacity={0.8}
         >
-          <Text style={styles.sendIcon}>➤</Text>
+          <Text style={[styles.sendIcon, hasText && !isLoading && styles.sendIconActive]}>
+            {isLoading ? '⏳' : '➤'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -80,89 +106,138 @@ export const PromptBar: React.FC<PromptBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    backgroundColor: '#131314',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    backgroundColor: theme.colors.bgBase,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
   },
   controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-    paddingHorizontal: 4,
   },
   modelBadge: {
-    backgroundColor: '#282A2C',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.bgSurface,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingVertical: 5,
+    borderRadius: theme.radius.full,
     borderWidth: 1,
-    borderColor: '#3C4043',
+    borderColor: theme.colors.borderSubtle,
+  },
+  sparkIcon: {
+    color: theme.colors.accentPrimaryLight,
+    fontSize: 12,
+    marginRight: 5,
   },
   modelBadgeText: {
-    color: '#D3E3FD',
+    color: theme.colors.textPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
+  dropdownChevron: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    marginLeft: 6,
+    marginBottom: 2,
+  },
   turboBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingVertical: 5,
+    borderRadius: theme.radius.full,
     borderWidth: 1,
   },
   turboActive: {
-    backgroundColor: '#1E3A2F',
-    borderColor: '#34A853',
+    backgroundColor: theme.colors.accentEmeraldDim,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
   },
   turboInactive: {
-    backgroundColor: '#282A2C',
-    borderColor: '#5F6368',
+    backgroundColor: theme.colors.accentAmberDim,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  modeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  dotActive: {
+    backgroundColor: theme.colors.accentEmerald,
+  },
+  dotInactive: {
+    backgroundColor: theme.colors.accentAmber,
   },
   turboText: {
     fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   turboTextActive: {
-    color: '#34A853',
+    color: theme.colors.accentEmerald,
   },
   turboTextInactive: {
-    color: '#9AA0A6',
+    color: theme.colors.accentAmber,
   },
   capsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E1F20',
-    borderRadius: 28,
+    backgroundColor: theme.colors.bgCapsule,
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: '#3C4043',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    borderColor: theme.colors.borderMedium,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     minHeight: 52,
   },
   input: {
     flex: 1,
-    color: '#E3E3E3',
-    fontSize: 15,
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    lineHeight: 20,
     paddingVertical: 8,
-    maxHeight: 120,
+    maxHeight: 110,
+  },
+  clearBtn: {
+    padding: 6,
+    marginRight: 4,
+  },
+  clearBtnText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   sendButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: 4,
   },
   sendActive: {
-    backgroundColor: '#A8C7FA',
+    backgroundColor: theme.colors.accentPrimary,
+    shadowColor: theme.colors.accentPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
   },
   sendDisabled: {
-    backgroundColor: '#3C4043',
+    backgroundColor: theme.colors.bgCardHover,
   },
   sendIcon: {
-    color: '#041E49',
-    fontSize: 16,
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    marginLeft: 2,
+  },
+  sendIconActive: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
 });

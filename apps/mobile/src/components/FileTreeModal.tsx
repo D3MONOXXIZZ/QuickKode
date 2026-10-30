@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, StyleSheet } from 'react-native';
 import type { FileTreeNode } from '@quickkode/shared';
+import { theme } from '../theme';
 
 export interface FileTreeModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ export const FileTreeModal: React.FC<FileTreeModalProps> = ({
   onRefresh,
 }) => {
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set());
+  const [searchFilter, setSearchFilter] = useState('');
 
   const toggleDirectory = (dirPath: string) => {
     setCollapsedDirs((prev) => {
@@ -28,9 +30,22 @@ export const FileTreeModal: React.FC<FileTreeModalProps> = ({
     });
   };
 
-  const renderNode = (node: FileTreeNode, depth = 0) => {
+  const getFileIcon = (fileName: string, isDir: boolean, isCollapsed: boolean) => {
+    if (isDir) return isCollapsed ? '📁' : '📂';
+    if (fileName.endsWith('.tsx') || fileName.endsWith('.ts')) return '🔷';
+    if (fileName.endsWith('.json')) return '🟨';
+    if (fileName.endsWith('.md')) return '📝';
+    if (fileName.endsWith('.css') || fileName.endsWith('.scss')) return '🎨';
+    return '📄';
+  };
+
+  const renderNode = (node: FileTreeNode, depth = 0): React.ReactNode => {
     const isDir = node.isDirectory;
     const isCollapsed = collapsedDirs.has(node.path);
+
+    if (searchFilter.trim() && !isDir && !node.name.toLowerCase().includes(searchFilter.toLowerCase())) {
+      return null;
+    }
 
     const statusBadge =
       node.changeStatus === 'modified'
@@ -44,22 +59,37 @@ export const FileTreeModal: React.FC<FileTreeModalProps> = ({
     return (
       <View key={node.path || node.name}>
         <TouchableOpacity
-          style={[styles.nodeRow, { paddingLeft: 16 + depth * 18 }]}
+          style={[styles.nodeRow, { paddingLeft: 16 + depth * 16 }]}
           onPress={() => {
             if (isDir) toggleDirectory(node.path);
-            else onSelectFile(node.path);
+            else {
+              onSelectFile(node.path);
+              onClose();
+            }
           }}
           activeOpacity={0.7}
         >
+          {isDir && (
+            <Text style={styles.chevronIcon}>{isCollapsed ? '›' : 'ˇ'}</Text>
+          )}
+
           <Text style={styles.nodeIcon}>
-            {isDir ? (isCollapsed ? '📁' : '📂') : '📄'}
+            {getFileIcon(node.name, isDir, isCollapsed)}
           </Text>
+
           <Text style={[styles.nodeName, isDir && styles.dirName]} numberOfLines={1}>
             {node.name}
           </Text>
 
           {statusBadge && (
-            <View style={[styles.statusBadge, statusBadge === 'M' ? styles.badgeM : styles.badgePlus]}>
+            <View
+              style={[
+                styles.statusBadge,
+                statusBadge === 'M' && styles.badgeModified,
+                statusBadge === '+' && styles.badgeAdded,
+                statusBadge === 'D' && styles.badgeDeleted,
+              ]}
+            >
               <Text style={styles.statusBadgeText}>{statusBadge}</Text>
             </View>
           )}
@@ -78,23 +108,36 @@ export const FileTreeModal: React.FC<FileTreeModalProps> = ({
         <View style={styles.sheet}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Virtual File Explorer</Text>
-              <Text style={styles.subtitle}>Streamed from cloud sandbox (0 local device storage)</Text>
+              <Text style={styles.title}>Project File Explorer</Text>
+              <Text style={styles.subtitle}>Streamed from cloud microVM (0 local storage)</Text>
             </View>
             <View style={styles.headerBtns}>
               {onRefresh && (
-                <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
+                <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Text style={styles.refreshBtnText}>🔄</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+              <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Text style={styles.closeBtnText}>✕</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <ScrollView style={styles.treeScroll}>
-            {tree ? renderNode(tree) : <Text style={styles.loadingText}>Loading file hierarchy...</Text>}
+          {/* Quick Filter Search Input */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="🔍 Filter files (e.g. App.tsx, button)..."
+              placeholderTextColor={theme.colors.textMuted}
+              value={searchFilter}
+              onChangeText={setSearchFilter}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <ScrollView style={styles.treeScroll} showsVerticalScrollIndicator={false}>
+            {tree ? renderNode(tree) : <Text style={styles.loadingText}>Connecting to cloud workspace...</Text>}
           </ScrollView>
         </View>
       </View>
@@ -105,44 +148,45 @@ export const FileTreeModal: React.FC<FileTreeModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#1E1F20',
+    backgroundColor: theme.colors.bgSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: '80%',
+    height: '82%',
     paddingTop: 20,
-    borderWidth: 1,
-    borderColor: '#333538',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#282A2C',
+    borderBottomColor: theme.colors.borderSubtle,
   },
   title: {
-    color: '#E3E3E3',
-    fontSize: 16,
+    color: theme.colors.textPrimary,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   subtitle: {
-    color: '#8E918F',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     marginTop: 2,
   },
   headerBtns: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   refreshBtn: {
     padding: 6,
-    marginRight: 8,
   },
   refreshBtnText: {
     fontSize: 14,
@@ -151,53 +195,79 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   closeBtnText: {
-    color: '#C4C7C5',
+    color: theme.colors.textMuted,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
+  },
+  searchInput: {
+    backgroundColor: theme.colors.bgBase,
+    color: theme.colors.textPrimary,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    fontSize: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
   },
   treeScroll: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   nodeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 9,
+    paddingVertical: 8,
     paddingRight: 20,
   },
+  chevronIcon: {
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+    width: 12,
+    marginRight: 4,
+  },
   nodeIcon: {
-    fontSize: 14,
+    fontSize: 13,
     marginRight: 8,
   },
   nodeName: {
-    color: '#E3E3E3',
+    color: theme.colors.textPrimary,
     fontSize: 13,
     flex: 1,
-    fontFamily: 'monospace',
+    fontFamily: theme.fonts.code,
   },
   dirName: {
     fontWeight: '600',
-    color: '#D3E3FD',
+    color: theme.colors.textPrimary,
   },
   statusBadge: {
     paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
+    paddingVertical: 2,
+    borderRadius: theme.radius.sm,
     marginLeft: 6,
   },
-  badgeM: {
-    backgroundColor: '#5C3800',
+  badgeModified: {
+    backgroundColor: theme.colors.accentAmberDim,
   },
-  badgePlus: {
-    backgroundColor: '#0F5132',
+  badgeAdded: {
+    backgroundColor: theme.colors.accentEmeraldDim,
+  },
+  badgeDeleted: {
+    backgroundColor: theme.colors.accentRoseDim,
   },
   statusBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
   },
   loadingText: {
-    color: '#8E918F',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     marginTop: 40,
     fontSize: 13,

@@ -1,3 +1,4 @@
+export * from './theme';
 export * from './types/client';
 export * from './services/socketClient';
 export * from './services/storage';

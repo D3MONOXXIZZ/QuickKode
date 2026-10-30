@@ -21,6 +21,7 @@ import { DiffViewerModal } from './components/DiffViewerModal';
 import { LivePreviewModal } from './components/LivePreviewModal';
 import { SettingsStorage, DEFAULT_BYOK_CONFIG } from './services/storage';
 import { OAuthService } from './services/oauthService';
+import { theme } from './theme';
 
 export const App: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState('session-primary-001');
@@ -579,11 +580,11 @@ export const App: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#131314',
+    backgroundColor: theme.colors.bgBase,
   },
   root: {
     flex: 1,
-    backgroundColor: '#131314',
+    backgroundColor: theme.colors.bgBase,
   },
 });
 

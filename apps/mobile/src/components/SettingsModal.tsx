@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import type { BYOKConfig } from '@quickkode/shared';
+import { theme } from '../theme';
 
 export interface SettingsModalProps {
   visible: boolean;
@@ -53,18 +54,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
         <View style={styles.sheet}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.title}>Environment & Keys</Text>
-              <Text style={styles.headerSubtitle}>Configured on-device for all your projects</Text>
+              <Text style={styles.title}>Environment & BYOK Center</Text>
+              <Text style={styles.headerSubtitle}>Saved securely on this device for all sessions</Text>
             </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* 1. Orchestrator Server URL */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🌐 Cloud Orchestrator Server</Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>🌐 Cloud Orchestrator</Text>
+                <View style={styles.sectionBadge}>
+                  <Text style={styles.sectionBadgeText}>REQUIRED</Text>
+                </View>
+              </View>
               <Text style={styles.sectionSubtitle}>
                 The WebSocket server powering agent sandboxes, terminal commands, and live previews.
               </Text>
@@ -72,7 +78,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
               <TextInput
                 style={styles.input}
                 placeholder="ws://192.168.1.80:4000 or wss://..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={serverUrl}
                 onChangeText={setServerUrl}
                 autoCapitalize="none"
@@ -81,16 +87,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
             </View>
 
             {/* 2. E2B Sandbox MicroVMs */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📦 E2B Isolated Sandboxes</Text>
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>📦 E2B Sandboxes (MicroVMs)</Text>
               <Text style={styles.sectionSubtitle}>
-                Executes code, compiles packages, and runs test suites inside 300ms cloud microVMs.
+                Runs code execution, package installs, and test suites inside 300ms cloud microVMs.
               </Text>
               <Text style={styles.inputLabel}>E2B API Key (from e2b.dev)</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e2b_..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={e2bKey}
                 onChangeText={setE2bKey}
                 secureTextEntry
@@ -99,7 +105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
             </View>
 
             {/* 3. Antigravity & Gemini Core */}
-            <View style={styles.section}>
+            <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>✦ Google Antigravity & Gemini</Text>
               <Text style={styles.sectionSubtitle}>
                 Delegate directly to your PC Antigravity quota or provide a Gemini API key.
@@ -108,8 +114,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
               <TouchableOpacity
                 style={[styles.accountConnectBtn, pcAccountConnected && styles.accountConnectedBtn]}
                 onPress={() => setPcAccountConnected(!pcAccountConnected)}
+                activeOpacity={0.8}
               >
-                <Text style={styles.accountConnectText}>
+                <Text style={[styles.accountConnectText, pcAccountConnected && styles.accountConnectedText]}>
                   {pcAccountConnected ? '✓ PC Account Delegated (No API Key Required)' : 'Use Antigravity PC Quota'}
                 </Text>
               </TouchableOpacity>
@@ -118,7 +125,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
               <TextInput
                 style={styles.input}
                 placeholder="AIzaSy..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={geminiKey}
                 onChangeText={setGeminiKey}
                 secureTextEntry
@@ -127,39 +134,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
             </View>
 
             {/* 4. OpenCode Models (BYOK) */}
-            <View style={styles.section}>
+            <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>⚡ OpenCode Multi-Model (BYOK)</Text>
               <Text style={styles.sectionSubtitle}>
-                Bring your own keys for DeepSeek, Claude, or GPT-4o.
+                Bring your own keys to unlock DeepSeek-Coder-V2, Claude 3.5 Sonnet, or GPT-4o.
               </Text>
 
-              <Text style={styles.inputLabel}>DeepSeek API Key (DeepSeek-Coder-V2 / R1)</Text>
+              <Text style={styles.inputLabel}>DeepSeek API Key</Text>
               <TextInput
                 style={styles.input}
                 placeholder="sk-..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={deepseekKey}
                 onChangeText={setDeepseekKey}
                 secureTextEntry
                 autoCapitalize="none"
               />
 
-              <Text style={styles.inputLabel}>Anthropic API Key (Claude 3.5 Sonnet)</Text>
+              <Text style={styles.inputLabel}>Anthropic API Key</Text>
               <TextInput
                 style={styles.input}
                 placeholder="sk-ant-..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={anthropicKey}
                 onChangeText={setAnthropicKey}
                 secureTextEntry
                 autoCapitalize="none"
               />
 
-              <Text style={styles.inputLabel}>OpenAI API Key (GPT-4o)</Text>
+              <Text style={styles.inputLabel}>OpenAI API Key</Text>
               <TextInput
                 style={styles.input}
                 placeholder="sk-proj-..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={openAiKey}
                 onChangeText={setOpenAiKey}
                 secureTextEntry
@@ -168,16 +175,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
             </View>
 
             {/* 5. GitHub Integration */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🐙 GitHub Integration</Text>
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>🐙 GitHub Token</Text>
               <Text style={styles.sectionSubtitle}>
-                Allows the agent to clone private repos, create branches, and push approved commits.
+                Personal Access Token with repo scope for cloning and pushing code.
               </Text>
               <Text style={styles.inputLabel}>GitHub Personal Access Token (PAT)</Text>
               <TextInput
                 style={styles.input}
                 placeholder="ghp_..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={githubToken}
                 onChangeText={setGithubToken}
                 secureTextEntry
@@ -186,16 +193,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
             </View>
 
             {/* 6. Google Drive Sync */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📁 Google Drive Differential Sync</Text>
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>📁 Google Drive Sync</Text>
               <Text style={styles.sectionSubtitle}>
-                Two-way delta sync between your cloud sandbox and Google Drive with .driveignore protection.
+                Delta sync between microVM and Google Drive with automatic .driveignore filters.
               </Text>
               <Text style={styles.inputLabel}>Google Drive Target Folder ID</Text>
               <TextInput
                 style={styles.input}
                 placeholder="1a2b3c4d5e6f..."
-                placeholderTextColor="#8E918F"
+                placeholderTextColor={theme.colors.textMuted}
                 value={driveFolderId}
                 onChangeText={setDriveFolderId}
                 autoCapitalize="none"
@@ -203,13 +210,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
             </View>
           </ScrollView>
 
+          {/* Action Button Row */}
           <View style={styles.btnRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.8}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
-              <Text style={styles.submitBtnText}>Save & Apply</Text>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleSave} activeOpacity={0.8}>
+              <Text style={styles.submitBtnText}>Save Configuration</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -225,25 +233,33 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#1E1F20',
+    backgroundColor: theme.colors.bgSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '90%',
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 28,
+    maxHeight: '92%',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   title: {
-    color: '#E3E3E3',
-    fontSize: 20,
+    color: theme.colors.textPrimary,
+    fontSize: 18,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    color: '#8E918F',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
@@ -251,92 +267,120 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   closeBtnText: {
-    color: '#8E918F',
-    fontSize: 18,
+    color: theme.colors.textMuted,
+    fontSize: 16,
+    fontWeight: '600',
   },
   scroll: {
     marginBottom: 16,
   },
-  section: {
-    marginBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2B2D30',
-    paddingBottom: 20,
+  sectionCard: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.radius.md,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  sectionBadge: {
+    backgroundColor: theme.colors.accentPrimaryDim,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.sm,
+  },
+  sectionBadgeText: {
+    color: theme.colors.accentPrimaryLight,
+    fontSize: 9,
+    fontWeight: '700',
   },
   sectionTitle: {
-    color: '#A8C7FA',
-    fontSize: 15,
+    color: theme.colors.textPrimary,
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 4,
   },
   sectionSubtitle: {
-    color: '#8E918F',
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 12,
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 4,
+    marginBottom: 10,
   },
   inputLabel: {
-    color: '#C4C7C5',
-    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontSize: 11,
     fontWeight: '600',
-    marginBottom: 6,
-    marginTop: 8,
+    marginBottom: 4,
+    marginTop: 6,
   },
   input: {
-    backgroundColor: '#131314',
+    backgroundColor: theme.colors.bgBase,
+    color: theme.colors.textPrimary,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
     borderWidth: 1,
-    borderColor: '#3C4043',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: '#E3E3E3',
-    fontSize: 14,
+    borderColor: theme.colors.borderSubtle,
   },
   accountConnectBtn: {
-    backgroundColor: '#282A2C',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
+    backgroundColor: theme.colors.bgBase,
     borderWidth: 1,
-    borderColor: '#3C4043',
+    borderColor: theme.colors.borderMedium,
+    paddingVertical: 10,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
     marginBottom: 8,
   },
   accountConnectedBtn: {
-    backgroundColor: '#1E3A2F',
-    borderColor: '#34A853',
+    backgroundColor: theme.colors.accentEmeraldDim,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
   },
   accountConnectText: {
-    color: '#A8C7FA',
-    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontSize: 12,
     fontWeight: '600',
+  },
+  accountConnectedText: {
+    color: theme.colors.accentEmerald,
+    fontWeight: '700',
   },
   btnRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: '#282A2C',
-    paddingVertical: 14,
-    borderRadius: 20,
+    backgroundColor: theme.colors.bgCardHover,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
   },
   cancelBtnText: {
-    color: '#E3E3E3',
-    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontSize: 13,
     fontWeight: '600',
   },
   submitBtn: {
     flex: 2,
-    backgroundColor: '#004A77',
-    paddingVertical: 14,
-    borderRadius: 20,
+    backgroundColor: theme.colors.accentPrimary,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
+    shadowColor: theme.colors.accentPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   submitBtnText: {
-    color: '#D3E3FD',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
   },
 });

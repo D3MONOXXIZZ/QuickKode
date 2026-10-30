@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { theme } from '../theme';
 
 export interface CodeEditorModalProps {
   visible: boolean;
@@ -53,14 +54,17 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({
       <SafeAreaView style={styles.safeArea}>
         {/* Top Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={onClose}>
-            <Text style={styles.backBtnText}>✕ Close</Text>
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
 
           <View style={styles.titleBox}>
-            <Text style={styles.fileName} numberOfLines={1}>
-              {fileName} {isDirty && '●'}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.fileName} numberOfLines={1}>
+                {fileName}
+              </Text>
+              {isDirty && <View style={styles.dirtyDot} />}
+            </View>
             <Text style={styles.filePath} numberOfLines={1}>
               {filePath}
             </Text>
@@ -70,8 +74,9 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({
             style={[styles.saveBtn, isDirty ? styles.saveBtnActive : styles.saveBtnDisabled]}
             onPress={handleSave}
             disabled={!isDirty}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.saveBtnText, isDirty && styles.saveBtnTextActive]}>Save & Sync</Text>
+            <Text style={[styles.saveBtnText, isDirty && styles.saveBtnTextActive]}>Save</Text>
           </TouchableOpacity>
         </View>
 
@@ -91,12 +96,12 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({
         {/* Developer Accessory Keyboard Bar */}
         <View style={styles.accessoryBar}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.accessoryContent}>
-            <TouchableOpacity style={styles.tabKeyBtn} onPress={handleInsertTab}>
+            <TouchableOpacity style={styles.tabKeyBtn} onPress={handleInsertTab} activeOpacity={0.7}>
               <Text style={styles.tabKeyText}>TAB</Text>
             </TouchableOpacity>
 
             {PROGRAMMING_KEYS.map((key) => (
-              <TouchableOpacity key={key} style={styles.symbolKeyBtn} onPress={() => handleInsertSymbol(key)}>
+              <TouchableOpacity key={key} style={styles.symbolKeyBtn} onPress={() => handleInsertSymbol(key)} activeOpacity={0.7}>
                 <Text style={styles.symbolKeyText}>{key}</Text>
               </TouchableOpacity>
             ))}
@@ -110,56 +115,71 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#1E1F20',
+    backgroundColor: theme.colors.bgBase,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: Platform.OS === 'android' ? 40 : 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2B2D30',
-    backgroundColor: '#191A1B',
+    borderBottomColor: theme.colors.borderSubtle,
+    backgroundColor: theme.colors.bgSurface,
   },
-  backBtn: {
-    paddingVertical: 6,
-    paddingRight: 12,
+  closeBtn: {
+    padding: 6,
   },
-  backBtnText: {
-    color: '#8E918F',
-    fontSize: 14,
+  closeBtnText: {
+    color: theme.colors.textMuted,
+    fontSize: 16,
     fontWeight: '600',
   },
   titleBox: {
     flex: 1,
+    marginHorizontal: 12,
+  },
+  titleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
   fileName: {
-    color: '#E3E3E3',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: theme.fonts.code,
+  },
+  dirtyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.accentAmber,
   },
   filePath: {
-    color: '#8E918F',
+    color: theme.colors.textMuted,
     fontSize: 10,
-    marginTop: 2,
+    marginTop: 1,
   },
   saveBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#282A2C',
+    paddingVertical: 7,
+    borderRadius: theme.radius.full,
   },
   saveBtnActive: {
-    backgroundColor: '#34A853',
+    backgroundColor: theme.colors.accentPrimary,
+    shadowColor: theme.colors.accentPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   saveBtnDisabled: {
-    opacity: 0.5,
+    backgroundColor: theme.colors.bgCardHover,
   },
   saveBtnText: {
-    color: '#8E918F',
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -168,51 +188,56 @@ const styles = StyleSheet.create({
   },
   editorScroll: {
     flex: 1,
-    backgroundColor: '#131314',
-    padding: 12,
+    backgroundColor: theme.colors.bgBase,
+    padding: 16,
   },
   codeText: {
-    color: '#D3E3FD',
-    fontFamily: 'monospace',
+    color: '#F3F4F6',
+    fontFamily: theme.fonts.code,
     fontSize: 13,
     lineHeight: 20,
     minHeight: 400,
   },
   accessoryBar: {
-    backgroundColor: '#1E1F20',
+    backgroundColor: theme.colors.bgSurface,
     borderTopWidth: 1,
-    borderTopColor: '#2B2D30',
+    borderTopColor: theme.colors.borderSubtle,
     paddingVertical: 6,
   },
   accessoryContent: {
     paddingHorizontal: 12,
-    alignItems: 'center',
+    gap: 6,
   },
   tabKeyBtn: {
-    backgroundColor: '#2B2D30',
-    borderRadius: 8,
+    backgroundColor: theme.colors.bgCardHover,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginRight: 6,
-  },
-  tabKeyText: {
-    color: '#A8C7FA',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  symbolKeyBtn: {
-    backgroundColor: '#282A2C',
-    borderRadius: 8,
-    width: 36,
-    height: 36,
+    borderRadius: theme.radius.sm,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  tabKeyText: {
+    color: theme.colors.accentCyan,
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: theme.fonts.code,
+  },
+  symbolKeyBtn: {
+    backgroundColor: theme.colors.bgCardHover,
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
   },
   symbolKeyText: {
-    color: '#E3E3E3',
-    fontSize: 15,
+    color: theme.colors.textPrimary,
+    fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'monospace',
+    fontFamily: theme.fonts.code,
   },
 });

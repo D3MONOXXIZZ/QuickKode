@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { theme } from '../theme';
 
 export interface GitHubImportModalProps {
   visible: boolean;
@@ -30,14 +31,25 @@ export const GitHubImportModal: React.FC<GitHubImportModalProps> = ({ visible, o
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>Pull from GitHub</Text>
-          <Text style={styles.subtitle}>Enter any public or private repository name to clone directly into cloud storage.</Text>
+          <View style={styles.headerRow}>
+            <View style={styles.titleRow}>
+              <Text style={styles.githubIcon}>🐙</Text>
+              <Text style={styles.title}>Pull from GitHub</Text>
+            </View>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
 
-          <Text style={styles.inputLabel}>Repository Name</Text>
+          <Text style={styles.subtitle}>
+            Clone any public or private repository directly into the cloud microVM workspace.
+          </Text>
+
+          <Text style={styles.inputLabel}>REPOSITORY NAME (OWNER/REPO)</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. octocat/Hello-World"
-            placeholderTextColor="#8E918F"
+            placeholder="e.g. facebook/react or D3MONOXXIZZ/QuickKode"
+            placeholderTextColor={theme.colors.textMuted}
             value={repo}
             onChangeText={(t) => {
               setRepo(t);
@@ -47,25 +59,25 @@ export const GitHubImportModal: React.FC<GitHubImportModalProps> = ({ visible, o
             autoCorrect={false}
           />
 
-          <Text style={styles.inputLabel}>Branch (Optional)</Text>
+          <Text style={styles.inputLabel}>TARGET BRANCH (OPTIONAL)</Text>
           <TextInput
             style={styles.input}
             placeholder="main (default)"
-            placeholderTextColor="#8E918F"
+            placeholderTextColor={theme.colors.textMuted}
             value={branch}
             onChangeText={setBranch}
             autoCapitalize="none"
             autoCorrect={false}
           />
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
 
           <View style={styles.btnRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.8}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.8}>
               <Text style={styles.submitBtnText}>Clone Project</Text>
             </TouchableOpacity>
           </View>
@@ -78,75 +90,110 @@ export const GitHubImportModal: React.FC<GitHubImportModalProps> = ({ visible, o
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#1E1F20',
+    backgroundColor: theme.colors.bgSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#333538',
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 28,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  githubIcon: {
+    fontSize: 20,
   },
   title: {
-    color: '#E3E3E3',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  closeBtn: {
+    padding: 6,
+  },
+  closeBtnText: {
+    color: theme.colors.textMuted,
+    fontSize: 16,
+    fontWeight: '600',
   },
   subtitle: {
-    color: '#8E918F',
-    fontSize: 13,
-    marginBottom: 20,
-    lineHeight: 18,
-  },
-  inputLabel: {
-    color: '#C4C7C5',
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#131314',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: '#E3E3E3',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#3C4043',
+    lineHeight: 18,
     marginBottom: 16,
   },
+  inputLabel: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 6,
+    marginTop: 6,
+  },
+  input: {
+    backgroundColor: theme.colors.bgBase,
+    color: theme.colors.textPrimary,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    marginBottom: 10,
+  },
   errorText: {
-    color: '#EA4335',
+    color: theme.colors.accentRose,
     fontSize: 12,
-    marginBottom: 12,
+    marginTop: 4,
+    marginBottom: 8,
   },
   btnRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 8,
+    gap: 10,
+    marginTop: 10,
   },
   cancelBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 10,
+    flex: 1,
+    backgroundColor: theme.colors.bgCardHover,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
   },
   cancelBtnText: {
-    color: '#C4C7C5',
-    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontSize: 13,
     fontWeight: '600',
   },
   submitBtn: {
-    backgroundColor: '#A8C7FA',
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    flex: 2,
+    backgroundColor: theme.colors.accentPrimary,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    shadowColor: theme.colors.accentPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   submitBtnText: {
-    color: '#041E49',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
   },
 });

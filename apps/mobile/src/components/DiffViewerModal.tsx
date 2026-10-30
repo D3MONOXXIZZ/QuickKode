@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet } from 'react-native';
 import type { FileDiff } from '@quickkode/shared';
+import { theme } from '../theme';
 
 export interface DiffViewerModalProps {
   visible: boolean;
@@ -33,19 +34,23 @@ export const DiffViewerModal: React.FC<DiffViewerModalProps> = ({
           <View style={styles.header}>
             <View>
               <Text style={styles.title}>Review Agent Changes</Text>
-              <Text style={styles.summaryStats}>
-                {diffs.length} files changed •{' '}
-                <Text style={styles.addText}>+{totalAdditions}</Text> /{' '}
-                <Text style={styles.delText}>-{totalDeletions}</Text>
-              </Text>
+              <View style={styles.statsRow}>
+                <Text style={styles.filesCount}>{diffs.length} files changed</Text>
+                <View style={styles.badgeAdd}>
+                  <Text style={styles.addText}>+{totalAdditions}</Text>
+                </View>
+                <View style={styles.badgeDel}>
+                  <Text style={styles.delText}>-{totalDeletions}</Text>
+                </View>
+              </View>
             </View>
 
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.diffScroll}>
+          <ScrollView style={styles.diffScroll} showsVerticalScrollIndicator={false}>
             {diffs.map((diff, index) => {
               const isExpanded = expandedIndex === index;
 
@@ -62,31 +67,16 @@ export const DiffViewerModal: React.FC<DiffViewerModalProps> = ({
                     </Text>
 
                     <View style={styles.fileStats}>
-                      <Text style={styles.addText}>+{diff.additions}</Text>
+                      <Text style={styles.addStatText}>+{diff.additions}</Text>
                       <Text style={styles.statSeparator}>/</Text>
-                      <Text style={styles.delText}>-{diff.deletions}</Text>
+                      <Text style={styles.delStatText}>-{diff.deletions}</Text>
                     </View>
                   </TouchableOpacity>
 
                   {isExpanded && (
                     <ScrollView horizontal style={styles.diffHunkBox} showsHorizontalScrollIndicator={false}>
                       <View style={styles.diffLinesCol}>
-                        {diff.lines ? (
-                          diff.lines.map((l, lIdx) => (
-                            <Text
-                              key={lIdx}
-                              style={[
-                                styles.diffLine,
-                                l.type === 'add' && styles.addLine,
-                                l.type === 'delete' && styles.delLine,
-                              ]}
-                            >
-                              {l.type === 'add' ? '+' : l.type === 'delete' ? '-' : ' '} {l.content}
-                            </Text>
-                          ))
-                        ) : (
-                          <Text style={styles.rawDiff}>{diff.diffHunks}</Text>
-                        )}
+                        <Text style={styles.rawDiff}>{diff.diffHunks}</Text>
                       </View>
                     </ScrollView>
                   )}
@@ -104,7 +94,7 @@ export const DiffViewerModal: React.FC<DiffViewerModalProps> = ({
               activeOpacity={0.8}
             >
               <Text style={styles.approveBtnText}>
-                {isPushing ? 'Pushing to GitHub...' : '✓ Approve & Push to GitHub'}
+                {isPushing ? 'Syncing to Cloud Workspace...' : '✓ Approve & Push Changes'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -121,132 +111,156 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#1E1F20',
+    backgroundColor: theme.colors.bgSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: '85%',
-    borderWidth: 1,
-    borderColor: '#333538',
+    height: '86%',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#282A2C',
+    borderBottomColor: theme.colors.borderSubtle,
   },
   title: {
-    color: '#E3E3E3',
-    fontSize: 16,
+    color: theme.colors.textPrimary,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
-  summaryStats: {
-    color: '#8E918F',
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  filesCount: {
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    marginTop: 3,
+  },
+  badgeAdd: {
+    backgroundColor: theme.colors.accentEmeraldDim,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: theme.radius.sm,
   },
   addText: {
-    color: '#34A853',
+    color: theme.colors.accentEmerald,
+    fontSize: 11,
     fontWeight: '700',
+  },
+  badgeDel: {
+    backgroundColor: theme.colors.accentRoseDim,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: theme.radius.sm,
   },
   delText: {
-    color: '#EA4335',
+    color: theme.colors.accentRose,
+    fontSize: 11,
     fontWeight: '700',
-  },
-  statSeparator: {
-    color: '#5F6368',
-    marginHorizontal: 3,
   },
   closeBtn: {
     padding: 6,
   },
   closeBtnText: {
-    color: '#C4C7C5',
+    color: theme.colors.textMuted,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   diffScroll: {
     flex: 1,
     padding: 16,
   },
   fileCard: {
-    backgroundColor: '#191A1B',
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.radius.md,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#2B2D30',
+    borderColor: theme.colors.borderSubtle,
     overflow: 'hidden',
   },
   fileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
   },
   fileIcon: {
-    color: '#A8C7FA',
-    fontSize: 14,
+    color: theme.colors.accentPrimaryLight,
+    fontSize: 13,
     marginRight: 8,
   },
   fileName: {
-    color: '#E3E3E3',
+    color: theme.colors.textPrimary,
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'monospace',
+    fontFamily: theme.fonts.code,
     flex: 1,
   },
   fileStats: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  addStatText: {
+    color: theme.colors.accentEmerald,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statSeparator: {
+    color: theme.colors.textMuted,
+    marginHorizontal: 3,
+    fontSize: 11,
+  },
+  delStatText: {
+    color: theme.colors.accentRose,
+    fontSize: 11,
+    fontWeight: '700',
+  },
   diffHunkBox: {
-    backgroundColor: '#131314',
+    backgroundColor: theme.colors.bgBase,
     borderTopWidth: 1,
-    borderTopColor: '#282A2C',
+    borderTopColor: theme.colors.borderSubtle,
     padding: 10,
   },
   diffLinesCol: {
     minWidth: '100%',
   },
-  diffLine: {
-    color: '#C4C7C5',
-    fontFamily: 'monospace',
-    fontSize: 11,
-    lineHeight: 18,
-  },
-  addLine: {
-    color: '#34A853',
-    backgroundColor: 'rgba(52, 168, 83, 0.12)',
-  },
-  delLine: {
-    color: '#EA4335',
-    backgroundColor: 'rgba(234, 67, 53, 0.12)',
-  },
   rawDiff: {
-    color: '#C4C7C5',
-    fontFamily: 'monospace',
-    fontSize: 11,
+    color: '#E0E7FF',
+    fontFamily: theme.fonts.code,
+    fontSize: 12,
+    lineHeight: 18,
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#282A2C',
-    backgroundColor: '#191A1B',
+    borderTopColor: theme.colors.borderSubtle,
+    backgroundColor: theme.colors.bgSurface,
   },
   approveBtn: {
-    backgroundColor: '#34A853',
-    borderRadius: 24,
-    paddingVertical: 14,
+    backgroundColor: theme.colors.accentEmerald,
+    borderRadius: theme.radius.md,
+    paddingVertical: 13,
     alignItems: 'center',
+    shadowColor: theme.colors.accentEmerald,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   btnDisabled: {
     opacity: 0.6,
   },
   approveBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+    color: '#0A0B0E',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

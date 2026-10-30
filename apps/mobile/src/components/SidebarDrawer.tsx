@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, Image, StyleSheet } from 'react-native';
 import type { ClientProject, ChatThread, DrawerViewMode, UserProfile } from '../types/client';
 import type { ActiveModelConfig } from '@quickkode/shared';
+import { theme } from '../theme';
 
 export interface SidebarDrawerProps {
   isOpen: boolean;
@@ -44,414 +45,602 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const toggleViewMode = () => {
-    setViewMode((prev) => (prev === 'chats' ? 'projects' : 'chats'));
-  };
-
-  const modelTitle =
-    activeModel.provider === 'antigravity'
-      ? '⚡ Gemini Antigravity (PC)'
-      : `✦ OpenCode (${activeModel.modelName})`;
-
   return (
     <Modal visible={isOpen} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
+        {/* Backdrop touch area */}
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
 
+        {/* Sliding drawer panel */}
         <View style={styles.drawer}>
-          {/* Top: Morphing Model Badge */}
-        <TouchableOpacity style={styles.modelHeaderPill} onPress={toggleViewMode} activeOpacity={0.8}>
-          <View style={styles.modelPillTopRow}>
-            <Text style={styles.modelPillTitle} numberOfLines={1}>
-              {modelTitle}
-            </Text>
-            <Text style={styles.modelPillSwitchIcon}>⇄</Text>
-          </View>
-          <Text style={styles.modelPillSubtitle}>
-            {viewMode === 'chats' ? 'Switch to Project Navigator' : 'Switch to Chat Threads'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* View Mode Indicator */}
-        <View style={styles.viewModeTabs}>
-          <TouchableOpacity
-            style={[styles.tabButton, viewMode === 'chats' && styles.tabActive]}
-            onPress={() => setViewMode('chats')}
-          >
-            <Text style={[styles.tabText, viewMode === 'chats' && styles.tabTextActive]}>Chats</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabButton, viewMode === 'projects' && styles.tabActive]}
-            onPress={() => setViewMode('projects')}
-          >
-            <Text style={[styles.tabText, viewMode === 'projects' && styles.tabTextActive]}>Projects</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Dynamic Content: Chats vs Projects */}
-        <ScrollView style={styles.listContainer}>
-          {viewMode === 'chats' ? (
-            <View>
-              <TouchableOpacity style={styles.actionBtn} onPress={onNewChat}>
-                <Text style={styles.actionBtnIcon}>+</Text>
-                <Text style={styles.actionBtnText}>New Chat</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.sectionHeader}>RECENT THREADS</Text>
-              {threads.map((thread) => {
-                const isSelected = thread.sessionId === activeSessionId;
-                return (
-                  <TouchableOpacity
-                    key={thread.id}
-                    style={[styles.itemCard, isSelected && styles.itemCardSelected]}
-                    onPress={() => onSelectThread(thread.id)}
-                  >
-                    <Text style={styles.itemTitle} numberOfLines={1}>
-                      {thread.title}
-                    </Text>
-                    <Text style={styles.itemSubtitle}>
-                      {thread.modelConfig.provider === 'antigravity' ? 'Antigravity' : 'OpenCode'} •{' '}
-                      {new Date(thread.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : (
-            <View>
-              <TouchableOpacity style={styles.actionBtn} onPress={onOpenGitHubImport}>
-                <Text style={styles.actionBtnIcon}>⬇</Text>
-                <Text style={styles.actionBtnText}>Pull from GitHub</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.sectionHeader}>CONNECTED PROJECTS</Text>
-              {projects.map((proj) => {
-                const isSelected = proj.id === activeProjectId;
-                const syncIcon = proj.syncStatus === 'in_sync' ? '🟢' : proj.syncStatus === 'syncing' ? '🔄' : '⚠️';
-                return (
-                  <TouchableOpacity
-                    key={proj.id}
-                    style={[styles.itemCard, isSelected && styles.itemCardSelected]}
-                    onPress={() => onSelectProject(proj.id)}
-                  >
-                    <View style={styles.projectRow}>
-                      <Text style={styles.itemTitle} numberOfLines={1}>
-                        {proj.name}
-                      </Text>
-                      <Text style={styles.syncIcon}>{syncIcon}</Text>
-                    </View>
-                    <Text style={styles.itemSubtitle}>
-                      {proj.source === 'google_drive' ? 'Google Drive' : 'GitHub'} • {proj.activeBranch ?? 'main'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </ScrollView>
-
-        {/* User Account / OAuth Login Card */}
-        <View style={styles.accountCard}>
-          {userProfile ? (
-            <View style={styles.userRow}>
-              {userProfile.avatarUrl ? (
-                <Image source={{ uri: userProfile.avatarUrl }} style={styles.userAvatar} />
-              ) : (
-                <View style={styles.userAvatarPlaceholder}>
-                  <Text style={styles.userAvatarText}>{userProfile.displayName[0]?.toUpperCase() ?? 'U'}</Text>
-                </View>
-              )}
-              <View style={styles.userInfo}>
-                <Text style={styles.userName} numberOfLines={1}>
-                  {userProfile.displayName}
-                </Text>
-                <Text style={styles.userProvider}>
-                  {userProfile.provider === 'github' ? '🐙 GitHub Connected' : '🌐 Google Connected'}
+          {/* Top Brand Header */}
+          <View style={styles.brandHeader}>
+            <View style={styles.brandTitleRow}>
+              <View style={styles.logoBadge}>
+                <Text style={styles.logoSpark}>✦</Text>
+              </View>
+              <View>
+                <Text style={styles.brandName}>QuickKode</Text>
+                <Text style={styles.brandVersion}>
+                  v1.0 • {activeModel.provider === 'antigravity' ? 'Antigravity' : activeModel.modelName}
                 </Text>
               </View>
-              {onSignOut && (
-                <TouchableOpacity style={styles.signOutBtn} onPress={onSignOut}>
-                  <Text style={styles.signOutText}>Sign Out</Text>
-                </TouchableOpacity>
-              )}
             </View>
-          ) : (
-            <View style={styles.loginCard}>
-              <Text style={styles.loginTitle}>Connect Accounts</Text>
-              <View style={styles.oauthRow}>
-                {onSignInGitHub && (
-                  <TouchableOpacity style={styles.githubBtn} onPress={onSignInGitHub}>
+
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={onClose}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Segmented View Mode Tabs */}
+          <View style={styles.tabsRow}>
+            <TouchableOpacity
+              style={[styles.tabButton, viewMode === 'chats' && styles.tabButtonActive]}
+              onPress={() => setViewMode('chats')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabText, viewMode === 'chats' && styles.tabTextActive]}>
+                💬 Chats ({threads.length})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, viewMode === 'projects' && styles.tabButtonActive]}
+              onPress={() => setViewMode('projects')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabText, viewMode === 'projects' && styles.tabTextActive]}>
+                📦 Projects ({projects.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Main List Content */}
+          <ScrollView style={styles.scrollList} showsVerticalScrollIndicator={false}>
+            {viewMode === 'chats' ? (
+              <View>
+                <TouchableOpacity
+                  style={styles.newChatBtn}
+                  onPress={() => {
+                    onNewChat();
+                    onClose();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.newChatIcon}>+</Text>
+                  <Text style={styles.newChatText}>New Coding Session</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionHeader}>RECENT SESSIONS</Text>
+                {threads.map((thread) => {
+                  const isSelected = thread.sessionId === activeSessionId;
+                  const timeFormatted = thread.lastMessageAt
+                    ? new Date(thread.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '';
+
+                  return (
+                    <TouchableOpacity
+                      key={thread.id}
+                      style={[styles.itemCard, isSelected && styles.itemCardSelected]}
+                      onPress={() => onSelectThread(thread.id)}
+                      activeOpacity={0.7}
+                    >
+                      {isSelected && <View style={styles.selectedIndicator} />}
+                      <View style={styles.itemContent}>
+                        <Text style={[styles.itemTitle, isSelected && styles.itemTitleSelected]} numberOfLines={1}>
+                          {thread.title}
+                        </Text>
+                        <View style={styles.metaRow}>
+                          <View style={styles.modelTag}>
+                            <Text style={styles.modelTagText}>
+                              {thread.modelConfig.provider === 'antigravity' ? 'Antigravity' : 'OpenCode'}
+                            </Text>
+                          </View>
+                          {timeFormatted ? <Text style={styles.itemTime}>{timeFormatted}</Text> : null}
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <View>
+                <TouchableOpacity
+                  style={styles.importBtn}
+                  onPress={onOpenGitHubImport}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.importBtnIcon}>⬇</Text>
+                  <Text style={styles.importBtnText}>Import from GitHub</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionHeader}>CONNECTED REPOSITORIES</Text>
+                {projects.map((proj) => {
+                  const isSelected = proj.id === activeProjectId;
+                  const syncColor =
+                    proj.syncStatus === 'in_sync'
+                      ? theme.colors.accentEmerald
+                      : proj.syncStatus === 'syncing'
+                      ? theme.colors.accentAmber
+                      : theme.colors.accentRose;
+
+                  const syncLabel =
+                    proj.syncStatus === 'in_sync'
+                      ? 'In Sync'
+                      : proj.syncStatus === 'syncing'
+                      ? 'Syncing'
+                      : 'Error';
+
+                  return (
+                    <TouchableOpacity
+                      key={proj.id}
+                      style={[styles.itemCard, isSelected && styles.itemCardSelected]}
+                      onPress={() => onSelectProject(proj.id)}
+                      activeOpacity={0.7}
+                    >
+                      {isSelected && <View style={styles.selectedIndicator} />}
+                      <View style={styles.itemContent}>
+                        <View style={styles.projectTitleRow}>
+                          <Text style={[styles.itemTitle, isSelected && styles.itemTitleSelected]} numberOfLines={1}>
+                            {proj.name}
+                          </Text>
+                          <View style={[styles.syncBadge, { borderColor: syncColor }]}>
+                            <View style={[styles.syncDot, { backgroundColor: syncColor }]} />
+                            <Text style={[styles.syncBadgeText, { color: syncColor }]}>{syncLabel}</Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.metaRow}>
+                          <Text style={styles.sourceText}>
+                            {proj.source === 'google_drive' ? '☁️ Google Drive' : '🐙 GitHub'}
+                          </Text>
+                          <Text style={styles.branchText}>🌿 {proj.activeBranch ?? 'main'}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </ScrollView>
+
+          {/* User Account / 1-Tap OAuth Login Card */}
+          <View style={styles.accountCard}>
+            {userProfile ? (
+              <View style={styles.userContainer}>
+                <View style={styles.userProfileRow}>
+                  {userProfile.avatarUrl ? (
+                    <Image source={{ uri: userProfile.avatarUrl }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={styles.avatarFallback}>
+                      <Text style={styles.avatarFallbackText}>
+                        {((userProfile.displayName || userProfile.email || 'U')[0] || 'U').toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.userInfoCol}>
+                    <Text style={styles.userName} numberOfLines={1}>
+                      {userProfile.displayName || userProfile.username || 'Developer'}
+                    </Text>
+                    <Text style={styles.userEmail} numberOfLines={1}>
+                      {userProfile.email || `${userProfile.provider} account`}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.signOutBtn}
+                    onPress={onSignOut}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.signOutText}>Exit</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.oauthContainer}>
+                <Text style={styles.oauthHeader}>SIGN IN TO SYNC CODE</Text>
+                <View style={styles.oauthRow}>
+                  <TouchableOpacity
+                    style={styles.oauthBtnGithub}
+                    onPress={onSignInGitHub}
+                    activeOpacity={0.8}
+                  >
                     <Text style={styles.oauthBtnText}>🐙 GitHub</Text>
                   </TouchableOpacity>
-                )}
-                {onSignInGoogle && (
-                  <TouchableOpacity style={styles.googleBtn} onPress={onSignInGoogle}>
+
+                  <TouchableOpacity
+                    style={styles.oauthBtnGoogle}
+                    onPress={onSignInGoogle}
+                    activeOpacity={0.8}
+                  >
                     <Text style={styles.oauthBtnText}>🌐 Google</Text>
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
-            </View>
-          )}
-        </View>
+            )}
 
-        {/* Bottom Drawer Bar: Settings & BYOK */}
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.settingsBtn} onPress={onOpenSettings}>
-            <Text style={styles.settingsIcon}>⚙</Text>
-            <Text style={styles.settingsText}>Settings & BYOK</Text>
-          </TouchableOpacity>
+            {/* Quick Settings Action */}
+            <TouchableOpacity
+              style={styles.settingsBtn}
+              onPress={onOpenSettings}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.settingsIcon}>⚙</Text>
+              <Text style={styles.settingsText}>Settings & Model Keys</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 100,
+    flex: 1,
     flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   backdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    flex: 1,
   },
   drawer: {
-    width: '80%',
-    maxWidth: 320,
-    backgroundColor: '#1E1F20',
-    height: '100%',
-    paddingTop: 50,
-    paddingHorizontal: 16,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '82%',
+    maxWidth: 340,
+    backgroundColor: theme.colors.bgSurface,
     borderRightWidth: 1,
-    borderRightColor: '#333538',
+    borderRightColor: theme.colors.borderSubtle,
+    display: 'flex',
+    flexDirection: 'column',
+    paddingTop: 48,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    zIndex: 999,
+    elevation: 20,
   },
-  modelHeaderPill: {
-    backgroundColor: '#282A2C',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#3C4043',
-    marginBottom: 16,
-  },
-  modelPillTopRow: {
+  brandHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
   },
-  modelPillTitle: {
-    color: '#D3E3FD',
-    fontSize: 14,
-    fontWeight: '700',
-    flex: 1,
+  brandTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  modelPillSwitchIcon: {
-    color: '#A8C7FA',
+  logoBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: theme.colors.accentPrimaryDim,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoSpark: {
+    color: theme.colors.accentPrimaryLight,
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 8,
   },
-  modelPillSubtitle: {
-    color: '#8E918F',
-    fontSize: 11,
-    marginTop: 4,
+  brandName: {
+    color: theme.colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  viewModeTabs: {
+  brandVersion: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  closeBtn: {
+    padding: 6,
+    borderRadius: theme.radius.sm,
+  },
+  closeBtnText: {
+    color: theme.colors.textMuted,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#131314',
-    borderRadius: 8,
+    backgroundColor: theme.colors.bgBase,
+    borderRadius: theme.radius.full,
     padding: 3,
-    marginBottom: 16,
+    marginVertical: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 7,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
-    borderRadius: 6,
   },
-  tabActive: {
-    backgroundColor: '#282A2C',
+  tabButtonActive: {
+    backgroundColor: theme.colors.bgCardHover,
   },
   tabText: {
-    color: '#8E918F',
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#FFFFFF',
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2B2D30',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 16,
-  },
-  actionBtnIcon: {
-    color: '#A8C7FA',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  actionBtnText: {
-    color: '#E3E3E3',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sectionHeader: {
-    color: '#8E918F',
-    fontSize: 11,
+    color: theme.colors.textPrimary,
     fontWeight: '700',
-    marginBottom: 8,
-    letterSpacing: 0.5,
   },
-  listContainer: {
+  scrollList: {
     flex: 1,
   },
-  itemCard: {
-    backgroundColor: '#191A1B',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#2B2D30',
-  },
-  itemCardSelected: {
-    borderColor: '#A8C7FA',
-    backgroundColor: '#20242B',
-  },
-  projectRow: {
+  newChatBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.accentPrimary,
+    paddingVertical: 11,
+    borderRadius: theme.radius.md,
+    marginBottom: 16,
+    shadowColor: theme.colors.accentPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  syncIcon: {
-    fontSize: 11,
+  newChatIcon: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 6,
   },
-  itemTitle: {
-    color: '#E3E3E3',
+  newChatText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  importBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.bgCard,
+    borderWidth: 1,
+    borderColor: theme.colors.borderMedium,
+    paddingVertical: 11,
+    borderRadius: theme.radius.md,
+    marginBottom: 16,
+  },
+  importBtnIcon: {
+    color: theme.colors.accentCyan,
+    fontSize: 14,
+    marginRight: 6,
+  },
+  importBtnText: {
+    color: theme.colors.textPrimary,
     fontSize: 13,
     fontWeight: '600',
   },
-  itemSubtitle: {
-    color: '#8E918F',
-    fontSize: 11,
-    marginTop: 3,
+  sectionHeader: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 8,
+    marginLeft: 4,
   },
-  footer: {
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#2B2D30',
+  itemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.radius.md,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    overflow: 'hidden',
+  },
+  itemCardSelected: {
+    backgroundColor: '#1E1A33',
+    borderColor: 'rgba(124, 58, 237, 0.4)',
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3.5,
+    backgroundColor: theme.colors.accentPrimary,
+  },
+  itemContent: {
+    flex: 1,
+    paddingLeft: 4,
+  },
+  itemTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  itemTitleSelected: {
+    color: theme.colors.accentPrimaryLight,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modelTag: {
+    backgroundColor: theme.colors.bgBase,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.sm,
+  },
+  modelTagText: {
+    color: theme.colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  itemTime: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+  },
+  projectTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  syncBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: theme.radius.full,
+  },
+  syncDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    marginRight: 4,
+  },
+  syncBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  sourceText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+  },
+  branchText: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
   },
   accountCard: {
-    backgroundColor: '#161718',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2B2D30',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
+    paddingTop: 12,
+    marginTop: 8,
   },
-  userRow: {
+  userContainer: {
+    backgroundColor: theme.colors.bgCard,
+    padding: 10,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    marginBottom: 8,
+  },
+  userProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   userAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     marginRight: 10,
   },
-  userAvatarPlaceholder: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#004A77',
-    alignItems: 'center',
+  avatarFallback: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.accentPrimary,
     justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 10,
   },
-  userAvatarText: {
-    color: '#D3E3FD',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    color: '#E3E3E3',
+  avatarFallbackText: {
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
   },
-  userProvider: {
-    color: '#34A853',
-    fontSize: 11,
-    marginTop: 1,
+  userInfoCol: {
+    flex: 1,
+  },
+  userName: {
+    color: theme.colors.textPrimary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  userEmail: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
   },
   signOutBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: '#282A2C',
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.bgCardHover,
   },
   signOutText: {
-    color: '#8E918F',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  loginCard: {},
-  loginTitle: {
-    color: '#8E918F',
-    fontSize: 11,
+    color: theme.colors.accentRose,
+    fontSize: 10,
     fontWeight: '700',
+  },
+  oauthContainer: {
     marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  },
+  oauthHeader: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 6,
+    marginLeft: 2,
   },
   oauthRow: {
     flexDirection: 'row',
     gap: 8,
   },
-  githubBtn: {
+  oauthBtnGithub: {
     flex: 1,
     backgroundColor: '#24292E',
-    borderRadius: 8,
     paddingVertical: 8,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#444D56',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  googleBtn: {
+  oauthBtnGoogle: {
     flex: 1,
     backgroundColor: '#1E293B',
-    borderRadius: 8,
     paddingVertical: 8,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   oauthBtnText: {
-    color: '#F8FAFC',
-    fontSize: 12,
+    color: theme.colors.textPrimary,
+    fontSize: 11,
     fontWeight: '600',
   },
   settingsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: theme.radius.sm,
   },
   settingsIcon: {
-    color: '#C4C7C5',
+    color: theme.colors.textSecondary,
     fontSize: 16,
-    marginRight: 10,
+    marginRight: 8,
   },
   settingsText: {
-    color: '#C4C7C5',
-    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontSize: 12,
     fontWeight: '600',
   },
 });
