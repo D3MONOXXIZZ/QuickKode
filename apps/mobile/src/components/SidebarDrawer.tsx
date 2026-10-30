@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet } from 'react-native';
-import type { ClientProject, ChatThread, DrawerViewMode } from '../types/client';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Image, StyleSheet } from 'react-native';
+import type { ClientProject, ChatThread, DrawerViewMode, UserProfile } from '../types/client';
 import type { ActiveModelConfig } from '@quickkode/shared';
 
 export interface SidebarDrawerProps {
@@ -11,11 +11,15 @@ export interface SidebarDrawerProps {
   activeSessionId: string;
   threads: ChatThread[];
   projects: ClientProject[];
+  userProfile?: UserProfile | null;
   onSelectThread: (threadId: string) => void;
   onSelectProject: (projectId: string) => void;
   onNewChat: () => void;
   onOpenGitHubImport: () => void;
   onOpenSettings: () => void;
+  onSignInGitHub?: () => void;
+  onSignInGoogle?: () => void;
+  onSignOut?: () => void;
 }
 
 export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
@@ -26,11 +30,15 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   activeSessionId,
   threads,
   projects,
+  userProfile,
   onSelectThread,
   onSelectProject,
   onNewChat,
   onOpenGitHubImport,
   onOpenSettings,
+  onSignInGitHub,
+  onSignInGoogle,
+  onSignOut,
 }) => {
   const [viewMode, setViewMode] = useState<DrawerViewMode>('chats');
 
@@ -142,6 +150,50 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             </View>
           )}
         </ScrollView>
+
+        {/* User Account / OAuth Login Card */}
+        <View style={styles.accountCard}>
+          {userProfile ? (
+            <View style={styles.userRow}>
+              {userProfile.avatarUrl ? (
+                <Image source={{ uri: userProfile.avatarUrl }} style={styles.userAvatar} />
+              ) : (
+                <View style={styles.userAvatarPlaceholder}>
+                  <Text style={styles.userAvatarText}>{userProfile.displayName[0]?.toUpperCase() ?? 'U'}</Text>
+                </View>
+              )}
+              <View style={styles.userInfo}>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {userProfile.displayName}
+                </Text>
+                <Text style={styles.userProvider}>
+                  {userProfile.provider === 'github' ? '🐙 GitHub Connected' : '🌐 Google Connected'}
+                </Text>
+              </View>
+              {onSignOut && (
+                <TouchableOpacity style={styles.signOutBtn} onPress={onSignOut}>
+                  <Text style={styles.signOutText}>Sign Out</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View style={styles.loginCard}>
+              <Text style={styles.loginTitle}>Connect Accounts</Text>
+              <View style={styles.oauthRow}>
+                {onSignInGitHub && (
+                  <TouchableOpacity style={styles.githubBtn} onPress={onSignInGitHub}>
+                    <Text style={styles.oauthBtnText}>🐙 GitHub</Text>
+                  </TouchableOpacity>
+                )}
+                {onSignInGoogle && (
+                  <TouchableOpacity style={styles.googleBtn} onPress={onSignInGoogle}>
+                    <Text style={styles.oauthBtnText}>🌐 Google</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* Bottom Drawer Bar: Settings & BYOK */}
         <View style={styles.footer}>
@@ -294,6 +346,98 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#2B2D30',
+  },
+  accountCard: {
+    backgroundColor: '#161718',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2B2D30',
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    marginRight: 10,
+  },
+  userAvatarPlaceholder: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#004A77',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  userAvatarText: {
+    color: '#D3E3FD',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    color: '#E3E3E3',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  userProvider: {
+    color: '#34A853',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  signOutBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#282A2C',
+  },
+  signOutText: {
+    color: '#8E918F',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  loginCard: {},
+  loginTitle: {
+    color: '#8E918F',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  oauthRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  githubBtn: {
+    flex: 1,
+    backgroundColor: '#24292E',
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#444D56',
+  },
+  googleBtn: {
+    flex: 1,
+    backgroundColor: '#1E293B',
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  oauthBtnText: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '600',
   },
   settingsBtn: {
     flexDirection: 'row',

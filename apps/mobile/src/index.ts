@@ -1,6 +1,7 @@
 export * from './types/client';
 export * from './services/socketClient';
 export * from './services/storage';
+export * from './services/oauthService';
 export * from './components/PromptBar';
 export * from './components/ThoughtWidget';
 export * from './components/SidebarDrawer';

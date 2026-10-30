@@ -9,7 +9,7 @@ import type {
   FileTreeNode,
   FileDiff,
 } from '@quickkode/shared';
-import type { ClientProject, ChatThread } from './types/client';
+import type { ClientProject, ChatThread, UserProfile } from './types/client';
 import { QuickKodeSocketClient } from './services/socketClient';
 import { ChatScreen } from './screens/ChatScreen';
 import { SidebarDrawer } from './components/SidebarDrawer';
@@ -20,6 +20,7 @@ import { CodeEditorModal } from './components/CodeEditorModal';
 import { DiffViewerModal } from './components/DiffViewerModal';
 import { LivePreviewModal } from './components/LivePreviewModal';
 import { SettingsStorage, DEFAULT_BYOK_CONFIG } from './services/storage';
+import { OAuthService } from './services/oauthService';
 
 export const App: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState('session-primary-001');
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
   const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [pendingDiffs, setPendingDiffs] = useState<FileDiff[]>([]);
@@ -82,6 +84,12 @@ export const App: React.FC = () => {
           modelName: 'deepseek-coder-v2',
           apiKey: saved.deepseekApiKey,
         });
+      }
+    });
+
+    void SettingsStorage.loadUser().then((user) => {
+      if (user) {
+        setUserProfile(user);
       }
     });
   }, []);
@@ -391,6 +399,39 @@ export const App: React.FC = () => {
     setIsLivePreviewOpen(true);
   };
 
+  const handleSignInGitHub = async () => {
+    try {
+      const profile = await OAuthService.signInWithGitHub(byokConfig.orchestratorServerUrl);
+      setUserProfile(profile);
+      if (profile.token) {
+        const updated = { ...byokConfig, githubToken: profile.token };
+        setByokConfig(updated);
+        void SettingsStorage.saveConfig(updated);
+      }
+    } catch (err) {
+      console.warn('[App] GitHub sign-in failed:', err);
+    }
+  };
+
+  const handleSignInGoogle = async () => {
+    try {
+      const profile = await OAuthService.signInWithGoogle(byokConfig.orchestratorServerUrl);
+      setUserProfile(profile);
+      if (profile.token) {
+        const updated = { ...byokConfig, googleOAuthToken: profile.token };
+        setByokConfig(updated);
+        void SettingsStorage.saveConfig(updated);
+      }
+    } catch (err) {
+      console.warn('[App] Google sign-in failed:', err);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await OAuthService.signOut();
+    setUserProfile(null);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
@@ -422,6 +463,7 @@ export const App: React.FC = () => {
           activeSessionId={activeSessionId}
           threads={threads}
           projects={projects}
+          userProfile={userProfile}
           onSelectThread={(threadId) => {
             const thread = threads.find((t) => t.id === threadId);
             if (thread) {
@@ -443,6 +485,9 @@ export const App: React.FC = () => {
             setIsDrawerOpen(false);
             setIsSettingsModalOpen(true);
           }}
+          onSignInGitHub={handleSignInGitHub}
+          onSignInGoogle={handleSignInGoogle}
+          onSignOut={handleSignOut}
         />
 
         <GitHubImportModal

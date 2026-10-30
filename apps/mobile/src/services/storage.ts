@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { BYOKConfig } from '@quickkode/shared';
+import type { UserProfile } from '../types/client';
 
 const STORAGE_KEY_CONFIG = '@quickkode:user_config_v1';
 const STORAGE_KEY_ONBOARDING = '@quickkode:onboarding_completed_v1';
+const STORAGE_KEY_USER = '@quickkode:user_profile_v1';
 
 export const DEFAULT_BYOK_CONFIG: BYOKConfig = {
   antigravityAuthType: 'pc_account',
@@ -44,6 +46,28 @@ export class SettingsStorage {
       await AsyncStorage.setItem(STORAGE_KEY_ONBOARDING, 'true');
     } catch (err) {
       console.warn('[SettingsStorage] Error setting onboarding:', err);
+    }
+  }
+
+  static async loadUser(): Promise<UserProfile | null> {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY_USER);
+      if (raw) return JSON.parse(raw);
+    } catch (err) {
+      console.warn('[SettingsStorage] Error loading user profile:', err);
+    }
+    return null;
+  }
+
+  static async saveUser(user: UserProfile | null): Promise<void> {
+    try {
+      if (!user) {
+        await AsyncStorage.removeItem(STORAGE_KEY_USER);
+      } else {
+        await AsyncStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+      }
+    } catch (err) {
+      console.error('[SettingsStorage] Error saving user profile:', err);
     }
   }
 }

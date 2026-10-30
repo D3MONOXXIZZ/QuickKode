@@ -21,3 +21,14 @@ export interface ChatThread {
 }
 
 export type DrawerViewMode = 'chats' | 'projects';
+
+export interface UserProfile {
+  id: string;
+  provider: 'github' | 'google';
+  displayName: string;
+  username?: string;
+  email?: string;
+  avatarUrl?: string;
+  token: string;
+  createdAt: string;
+}

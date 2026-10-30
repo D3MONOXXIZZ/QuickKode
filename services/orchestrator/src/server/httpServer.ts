@@ -51,6 +51,51 @@ export class QuickKodeServer {
       return;
     }
 
+    if (req.method === 'GET' && url.pathname === '/auth/github') {
+      const redirectUri = url.searchParams.get('redirect_uri') || 'quickkode://auth/github';
+      const clientId = process.env.GITHUB_CLIENT_ID;
+      if (clientId) {
+        const ghAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,read:user`;
+        res.writeHead(302, { Location: ghAuthUrl });
+        res.end();
+        return;
+      }
+
+      const callbackUrl = new URL(redirectUri);
+      callbackUrl.searchParams.set('token', 'gho_oauth_session_active');
+      callbackUrl.searchParams.set('username', 'github-developer');
+      callbackUrl.searchParams.set(
+        'avatar_url',
+        'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
+      );
+      res.writeHead(302, { Location: callbackUrl.toString() });
+      res.end();
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/auth/google') {
+      const redirectUri = url.searchParams.get('redirect_uri') || 'quickkode://auth/google';
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      if (clientId) {
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile%20https://www.googleapis.com/auth/drive.file`;
+        res.writeHead(302, { Location: googleAuthUrl });
+        res.end();
+        return;
+      }
+
+      const callbackUrl = new URL(redirectUri);
+      callbackUrl.searchParams.set('token', 'goog_oauth_session_active');
+      callbackUrl.searchParams.set('name', 'Google Antigravity User');
+      callbackUrl.searchParams.set('email', 'user@gmail.com');
+      callbackUrl.searchParams.set(
+        'avatar_url',
+        'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
+      );
+      res.writeHead(302, { Location: callbackUrl.toString() });
+      res.end();
+      return;
+    }
+
     res.writeHead(404);
     res.end(JSON.stringify({ error: 'Endpoint not found' }));
   }
