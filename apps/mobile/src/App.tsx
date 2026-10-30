@@ -55,7 +55,14 @@ export const App: React.FC = () => {
   useEffect(() => {
     void SettingsStorage.loadConfig().then((saved) => {
       setByokConfig(saved);
-      if (saved.geminiApiKey) {
+      if (saved.googleOAuthToken) {
+        setActiveModel({
+          provider: 'antigravity',
+          modelName: 'antigravity-gemini-2.5',
+          authType: 'oauth',
+          oauthToken: saved.googleOAuthToken,
+        });
+      } else if (saved.geminiApiKey) {
         setActiveModel({
           provider: 'antigravity',
           modelName: 'antigravity-gemini-2.5',
@@ -395,12 +402,27 @@ export const App: React.FC = () => {
 
   const handleSignInGoogle = async () => {
     try {
-      const profile = await OAuthService.signInWithGoogle(byokConfig.orchestratorServerUrl);
-      setUserProfile(profile);
-      if (profile.token) {
-        const updated = { ...byokConfig, googleOAuthToken: profile.token };
-        setByokConfig(updated);
-        void SettingsStorage.saveConfig(updated);
+      const profile = await OAuthService.signInWithGoogle(
+        byokConfig.orchestratorServerUrl,
+        byokConfig.googleClientId,
+      );
+      if (profile) {
+        setUserProfile(profile);
+        if (profile.token) {
+          const updated: BYOKConfig = {
+            ...byokConfig,
+            googleOAuthToken: profile.token,
+            antigravityAuthType: 'oauth',
+          };
+          setByokConfig(updated);
+          void SettingsStorage.saveConfig(updated);
+          setActiveModel({
+            provider: 'antigravity',
+            modelName: 'antigravity-gemini-2.5',
+            authType: 'oauth',
+            oauthToken: profile.token,
+          });
+        }
       }
     } catch (err) {
       console.warn('[App] Google sign-in failed:', err);
@@ -410,6 +432,28 @@ export const App: React.FC = () => {
   const handleSignOut = async () => {
     await OAuthService.signOut();
     setUserProfile(null);
+    const updated: BYOKConfig = {
+      ...byokConfig,
+      googleOAuthToken: undefined,
+      antigravityAuthType: byokConfig.geminiApiKey ? 'api_key' : 'pc_account',
+    };
+    setByokConfig(updated);
+    void SettingsStorage.saveConfig(updated);
+    if (byokConfig.geminiApiKey) {
+      setActiveModel({
+        provider: 'antigravity',
+        modelName: 'antigravity-gemini-2.5',
+        authType: 'api_key',
+        geminiApiKey: byokConfig.geminiApiKey,
+      });
+    } else {
+      setActiveModel({
+        provider: 'antigravity',
+        modelName: 'antigravity-gemini-2.5',
+        authType: 'api_key',
+        geminiApiKey: undefined,
+      });
+    }
   };
 
   return (
@@ -480,6 +524,9 @@ export const App: React.FC = () => {
           visible={isSettingsModalOpen}
           onClose={() => setIsSettingsModalOpen(false)}
           config={byokConfig}
+          userProfile={userProfile}
+          onSignInGoogle={handleSignInGoogle}
+          onSignOut={handleSignOut}
           onSave={(newConfig) => {
             const previousUrl = byokConfig.orchestratorServerUrl;
             setByokConfig(newConfig);
@@ -490,11 +537,18 @@ export const App: React.FC = () => {
               initSocketConnection(newConfig.orchestratorServerUrl);
             }
 
-            if (newConfig.antigravityAuthType === 'pc_account') {
+            if (newConfig.googleOAuthToken) {
               setActiveModel({
                 provider: 'antigravity',
                 modelName: 'antigravity-gemini-2.5',
-                authType: 'pc_account',
+                authType: 'oauth',
+                oauthToken: newConfig.googleOAuthToken,
+              });
+            } else if (newConfig.geminiApiKey) {
+              setActiveModel({
+                provider: 'antigravity',
+                modelName: 'antigravity-gemini-2.5',
+                authType: 'api_key',
                 geminiApiKey: newConfig.geminiApiKey,
               });
             } else if (newConfig.deepseekApiKey) {

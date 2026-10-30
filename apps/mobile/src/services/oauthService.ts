@@ -62,19 +62,30 @@ export class OAuthService {
   /**
    * Prompts user for 1-tap Google OAuth login (Drive & Antigravity)
    */
-  static async signInWithGoogle(serverUrl = 'http://192.168.1.80:4000'): Promise<UserProfile> {
+  static async signInWithGoogle(
+    serverUrl = 'http://192.168.1.80:4000',
+    clientId?: string,
+  ): Promise<UserProfile | null> {
     const redirectUrl = makeRedirectUri({
       scheme: 'quickkode',
       path: 'auth/google',
     });
 
     try {
-      const authUrl = `${serverUrl.replace('ws', 'http')}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+      let authUrl = `${serverUrl.replace('ws', 'http')}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+      if (clientId) {
+        authUrl += `&client_id=${encodeURIComponent(clientId)}`;
+      }
 
       const authResult = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
       if (authResult.type === 'success' && authResult.url) {
         const urlParams = new URL(authResult.url);
+        const error = urlParams.searchParams.get('error');
+        if (error) {
+          throw new Error(`Google OAuth error: ${error}`);
+        }
+
         const token = urlParams.searchParams.get('token');
         const email = urlParams.searchParams.get('email') || 'user@gmail.com';
         const name = urlParams.searchParams.get('name') || 'Google User';
@@ -96,19 +107,10 @@ export class OAuthService {
       }
     } catch (err) {
       console.warn('[OAuthService] Google WebBrowser flow:', err);
+      throw err;
     }
 
-    const fallbackProfile: UserProfile = {
-      id: `goog-user-${Date.now()}`,
-      provider: 'google',
-      displayName: 'Google Antigravity User',
-      email: 'user@gmail.com',
-      avatarUrl: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
-      token: 'goog_oauth_session_active',
-      createdAt: new Date().toISOString(),
-    };
-    await SettingsStorage.saveUser(fallbackProfile);
-    return fallbackProfile;
+    return null;
   }
 
   /**

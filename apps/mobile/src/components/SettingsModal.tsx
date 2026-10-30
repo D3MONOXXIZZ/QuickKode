@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import type { BYOKConfig } from '@quickkode/shared';
+import type { UserProfile } from '../types/client';
 import { theme } from '../theme';
 
 export interface SettingsModalProps {
@@ -8,35 +9,63 @@ export interface SettingsModalProps {
   onClose: () => void;
   config: BYOKConfig;
   onSave: (config: BYOKConfig) => void;
+  userProfile?: UserProfile | null;
+  onSignInGoogle?: () => Promise<void>;
+  onSignOut?: () => Promise<void>;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, config, onSave }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  visible,
+  onClose,
+  config,
+  onSave,
+  userProfile,
+  onSignInGoogle,
+  onSignOut,
+}) => {
   const [serverUrl, setServerUrl] = useState(config.orchestratorServerUrl ?? 'ws://192.168.1.80:4000');
   const [e2bKey, setE2bKey] = useState(config.e2bApiKey ?? '');
   const [geminiKey, setGeminiKey] = useState(config.geminiApiKey ?? '');
+  const [googleClientId, setGoogleClientId] = useState(config.googleClientId ?? '');
   const [deepseekKey, setDeepseekKey] = useState(config.deepseekApiKey ?? '');
   const [anthropicKey, setAnthropicKey] = useState(config.anthropicApiKey ?? '');
   const [openAiKey, setOpenAiKey] = useState(config.openAiApiKey ?? '');
   const [githubToken, setGithubToken] = useState(config.githubToken ?? '');
   const [driveFolderId, setDriveFolderId] = useState(config.googleDriveFolderId ?? '');
-  const [pcAccountConnected, setPcAccountConnected] = useState(config.antigravityAuthType === 'pc_account');
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     setServerUrl(config.orchestratorServerUrl ?? 'ws://192.168.1.80:4000');
     setE2bKey(config.e2bApiKey ?? '');
     setGeminiKey(config.geminiApiKey ?? '');
+    setGoogleClientId(config.googleClientId ?? '');
     setDeepseekKey(config.deepseekApiKey ?? '');
     setAnthropicKey(config.anthropicApiKey ?? '');
     setOpenAiKey(config.openAiApiKey ?? '');
     setGithubToken(config.githubToken ?? '');
     setDriveFolderId(config.googleDriveFolderId ?? '');
-    setPcAccountConnected(config.antigravityAuthType === 'pc_account');
   }, [config, visible]);
+
+  const isGoogleConnected = Boolean(
+    (userProfile?.provider === 'google' && userProfile.token) ||
+    config.googleOAuthToken,
+  );
+
+  const handleGoogleSignIn = async () => {
+    if (!onSignInGoogle) return;
+    setIsSigningIn(true);
+    try {
+      await onSignInGoogle();
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
 
   const handleSave = () => {
     onSave({
-      antigravityAuthType: pcAccountConnected ? 'pc_account' : 'api_key',
+      antigravityAuthType: isGoogleConnected ? 'oauth' : geminiKey.trim() ? 'api_key' : 'pc_account',
       orchestratorServerUrl: serverUrl.trim() || 'ws://192.168.1.80:4000',
+      googleClientId: googleClientId.trim() || undefined,
       e2bApiKey: e2bKey.trim() || undefined,
       geminiApiKey: geminiKey.trim() || undefined,
       deepseekApiKey: deepseekKey.trim() || undefined,
@@ -106,25 +135,70 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, 
 
             {/* 3. Antigravity & Gemini Core */}
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>✦ Google Antigravity & Gemini</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>✦ Google Gemini & Drive Sync</Text>
+                {isGoogleConnected && (
+                  <View style={styles.sectionBadgeSuccess}>
+                    <Text style={styles.sectionBadgeSuccessText}>CONNECTED</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.sectionSubtitle}>
-                Delegate directly to your PC Antigravity quota or provide a Gemini API key.
+                Sign in with your Google account to authorize Gemini AI and Drive code sync without an API key, or provide a direct API key.
               </Text>
 
-              <TouchableOpacity
-                style={[styles.accountConnectBtn, pcAccountConnected && styles.accountConnectedBtn]}
-                onPress={() => setPcAccountConnected(!pcAccountConnected)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.accountConnectText, pcAccountConnected && styles.accountConnectedText]}>
-                  {pcAccountConnected ? '✓ PC Account Delegated (No API Key Required)' : 'Use Antigravity PC Quota'}
-                </Text>
-              </TouchableOpacity>
+              {/* Google OAuth Status / Action */}
+              {isGoogleConnected ? (
+                <View style={styles.googleConnectedBox}>
+                  <View style={styles.googleUserRow}>
+                    <Text style={styles.googleIcon}>🌐</Text>
+                    <View style={styles.googleUserTextCol}>
+                      <Text style={styles.googleUserName}>
+                        {userProfile?.displayName || 'Google Account Connected'}
+                      </Text>
+                      <Text style={styles.googleUserEmail}>
+                        {userProfile?.email || 'OAuth 2.0 Token Active'}
+                      </Text>
+                    </View>
+                  </View>
+                  {onSignOut && (
+                    <TouchableOpacity
+                      style={styles.googleSignOutBtn}
+                      onPress={onSignOut}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.googleSignOutText}>Disconnect</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.googleSignInBtn, isSigningIn && styles.btnDisabled]}
+                  onPress={handleGoogleSignIn}
+                  disabled={isSigningIn}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.googleSignInIcon}>🌐</Text>
+                  <Text style={styles.googleSignInText}>
+                    {isSigningIn ? 'Connecting to Google...' : 'Sign in with Google (OAuth 2.0)'}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              <Text style={styles.inputLabel}>Gemini API Key (Optional Fallback)</Text>
+              <Text style={styles.inputLabel}>Google Cloud Client ID (Optional custom app)</Text>
               <TextInput
                 style={styles.input}
-                placeholder="AIzaSy..."
+                placeholder="...apps.googleusercontent.com"
+                placeholderTextColor={theme.colors.textMuted}
+                value={googleClientId}
+                onChangeText={setGoogleClientId}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.inputLabel}>Gemini API Key (Alternative Direct Key)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="AIzaSy... (from aistudio.google.com)"
                 placeholderTextColor={theme.colors.textMuted}
                 value={geminiKey}
                 onChangeText={setGeminiKey}
@@ -327,6 +401,91 @@ const styles = StyleSheet.create({
     fontSize: 13,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
+  },
+  sectionBadgeSuccess: {
+    backgroundColor: theme.colors.accentEmeraldDim,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: theme.radius.sm,
+  },
+  sectionBadgeSuccessText: {
+    color: theme.colors.accentEmerald,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  googleConnectedBox: {
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: theme.radius.md,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  googleUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  googleIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  googleUserTextCol: {
+    flex: 1,
+  },
+  googleUserName: {
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  googleUserEmail: {
+    color: theme.colors.accentEmerald,
+    fontSize: 11,
+    marginTop: 1,
+  },
+  googleSignOutBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.bgCard,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  googleSignOutText: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  googleSignInBtn: {
+    backgroundColor: '#2563EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    marginBottom: 12,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  googleSignInIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  googleSignInText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  btnDisabled: {
+    opacity: 0.6,
   },
   accountConnectBtn: {
     backgroundColor: theme.colors.bgBase,

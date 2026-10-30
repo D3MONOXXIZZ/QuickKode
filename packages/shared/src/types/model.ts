@@ -4,7 +4,7 @@
 
 export type ModelProvider = 'antigravity' | 'opencode';
 
-export type AntigravityAuthType = 'pc_account' | 'api_key';
+export type AntigravityAuthType = 'pc_account' | 'api_key' | 'oauth';
 
 export interface AntigravityModelConfig {
   provider: 'antigravity';
@@ -12,7 +12,7 @@ export interface AntigravityModelConfig {
   authType: AntigravityAuthType;
   /** Present only if authType === 'api_key' */
   geminiApiKey?: string;
-  /** Present if authType === 'pc_account' */
+  /** Present if authType === 'oauth' or authType === 'pc_account' */
   oauthToken?: string;
 }
 
@@ -36,6 +36,8 @@ export type ActiveModelConfig = AntigravityModelConfig | OpenCodeModelConfig;
 export interface BYOKConfig {
   antigravityAuthType: AntigravityAuthType;
   googleOAuthToken?: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
   geminiApiKey?: string;
   githubToken?: string;
   openAiApiKey?: string;

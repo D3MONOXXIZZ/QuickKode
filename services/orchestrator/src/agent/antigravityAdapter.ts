@@ -20,11 +20,18 @@ export class AntigravityAgentAdapter implements IAgentAdapter {
     const maxTurns = options.maxTurns ?? 10;
     let turn = 0;
 
+    const authDesc =
+      this.config.authType === 'oauth' || this.config.oauthToken
+        ? 'Google Account (OAuth 2.0 Bearer Token)'
+        : this.config.authType === 'api_key'
+        ? 'Google Gemini API Key'
+        : 'Antigravity PC Account (Subscription Quota)';
+
     // Emitting initial planning thought
     const initialThought: AgentThought = {
       id: `thought-${Date.now()}-init`,
       title: 'Planning Task with Gemini Antigravity',
-      content: `Analyzing prompt: "${options.prompt}". Auth Mode: ${this.config.authType === 'pc_account' ? 'Antigravity PC Account (Subscription Quota)' : 'Gemini API Key'}.`,
+      content: `Analyzing prompt: "${options.prompt}". Auth Mode: ${authDesc}.`,
       timestamp: new Date().toISOString(),
       status: 'in_progress',
     };
@@ -38,8 +45,13 @@ export class AntigravityAgentAdapter implements IAgentAdapter {
     }
 
     try {
-      if (this.config.authType === 'api_key' && this.config.geminiApiKey) {
-        // Direct Gemini API tool loop via REST
+      if (
+        (this.config.authType === 'api_key' && this.config.geminiApiKey) ||
+        (this.config.authType === 'oauth' && this.config.oauthToken) ||
+        this.config.oauthToken ||
+        this.config.geminiApiKey
+      ) {
+        // Direct Gemini API tool loop via REST (API Key or Google OAuth 2.0 Token)
         return await this.runGeminiApiLoop(options, executor, git, thoughts, toolCalls, maxTurns);
       }
 
@@ -234,7 +246,17 @@ const styles = StyleSheet.create({
     maxTurns: number,
   ): Promise<AgentRunResult> {
     const targetModel = this.config.modelName.includes('2') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${this.config.geminiApiKey}`;
+    const hasOAuth = Boolean(this.config.oauthToken);
+    const geminiUrl = hasOAuth
+      ? `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent`
+      : `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${this.config.geminiApiKey}`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (hasOAuth) {
+      headers['Authorization'] = `Bearer ${this.config.oauthToken}`;
+    }
 
     const formattedTools = [
       {
@@ -259,7 +281,7 @@ const styles = StyleSheet.create({
 
       const res = await fetch(geminiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           contents,
           tools: formattedTools,
@@ -267,6 +289,9 @@ const styles = StyleSheet.create({
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Google OAuth token expired or invalid (401). Please tap "Sign in with Google" again in QuickKode.');
+        }
         throw new Error(`Gemini API error (${res.status}): ${await res.text()}`);
       }
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const ExecutionModeSchema = z.enum(['standard', 'turbo']);
 
-export const AntigravityAuthTypeSchema = z.enum(['pc_account', 'api_key']);
+export const AntigravityAuthTypeSchema = z.enum(['pc_account', 'api_key', 'oauth']);
 
 export const AntigravityModelConfigSchema = z.object({
   provider: z.literal('antigravity'),
@@ -36,6 +36,8 @@ export const ActiveModelConfigSchema = z.discriminatedUnion('provider', [
 export const BYOKConfigSchema = z.object({
   antigravityAuthType: AntigravityAuthTypeSchema.default('pc_account'),
   googleOAuthToken: z.string().optional(),
+  googleClientId: z.string().optional(),
+  googleClientSecret: z.string().optional(),
   geminiApiKey: z.string().optional(),
   githubToken: z.string().optional(),
   openAiApiKey: z.string().optional(),

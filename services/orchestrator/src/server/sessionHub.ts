@@ -171,12 +171,21 @@ export class SessionHub {
             ctx.driveFolderId = byok.googleDriveFolderId;
           }
 
-          // If user configured Gemini API key in-app or in server environment, use it for live AI
+          // If user authenticated via Google OAuth or configured Gemini API key, use it for live AI
           const activeModelConfig = { ...modelConfig };
           const effectiveGeminiKey = byok?.geminiApiKey || process.env.GEMINI_API_KEY;
-          if (activeModelConfig.provider === 'antigravity' && effectiveGeminiKey) {
-            activeModelConfig.authType = 'api_key';
-            activeModelConfig.geminiApiKey = effectiveGeminiKey;
+          const effectiveOAuthToken =
+            byok?.googleOAuthToken ||
+            (activeModelConfig.provider === 'antigravity' ? activeModelConfig.oauthToken : undefined);
+
+          if (activeModelConfig.provider === 'antigravity') {
+            if (effectiveOAuthToken) {
+              activeModelConfig.authType = 'oauth';
+              activeModelConfig.oauthToken = effectiveOAuthToken;
+            } else if (effectiveGeminiKey) {
+              activeModelConfig.authType = 'api_key';
+              activeModelConfig.geminiApiKey = effectiveGeminiKey;
+            }
           }
 
           const controller =

@@ -27,13 +27,21 @@ function runSchemaTests() {
   assert(ExecutionModeSchema.safeParse('standard').success, 'ExecutionMode allows "standard"');
   assert(!ExecutionModeSchema.safeParse('invalid_mode').success, 'ExecutionMode rejects unknown mode');
 
-  // 2. Test Antigravity PC Account Config
+  // 2. Test Antigravity PC Account & Google OAuth Config
   const validAntigravityPC = AntigravityModelConfigSchema.safeParse({
     provider: 'antigravity',
     modelName: 'antigravity-gemini-2.5',
     authType: 'pc_account',
   });
   assert(validAntigravityPC.success, 'Antigravity PC Account config validates without API key');
+
+  const validAntigravityOAuth = AntigravityModelConfigSchema.safeParse({
+    provider: 'antigravity',
+    modelName: 'antigravity-gemini-2.5',
+    authType: 'oauth',
+    oauthToken: 'ya29.a0AfH6SMB...',
+  });
+  assert(validAntigravityOAuth.success, 'Antigravity Google OAuth config validates with OAuth Bearer token');
 
   // 3. Test OpenCode Model Config with BYOK
   const validOpenCode = OpenCodeModelConfigSchema.safeParse({

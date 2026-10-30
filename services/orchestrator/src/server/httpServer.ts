@@ -24,7 +24,7 @@ export class QuickKodeServer {
     this.setupWebSocket();
   }
 
-  private handleHttpRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+  private async handleHttpRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
 
     res.setHeader('Content-Type', 'application/json');
@@ -46,6 +46,22 @@ export class QuickKodeServer {
           service: 'quickkode-orchestrator',
           activeSessions: this.sessionHub.getActiveSessionsCount(),
           timestamp: new Date().toISOString(),
+        }),
+      );
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/auth/config') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          google: {
+            configured: Boolean(process.env.GOOGLE_CLIENT_ID),
+            clientId: process.env.GOOGLE_CLIENT_ID || null,
+          },
+          github: {
+            configured: Boolean(process.env.GITHUB_CLIENT_ID),
+          },
         }),
       );
       return;
@@ -75,9 +91,12 @@ export class QuickKodeServer {
 
     if (req.method === 'GET' && url.pathname === '/auth/google') {
       const redirectUri = url.searchParams.get('redirect_uri') || 'quickkode://auth/google';
-      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientId = url.searchParams.get('client_id') || process.env.GOOGLE_CLIENT_ID;
       if (clientId) {
-        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile%20https://www.googleapis.com/auth/drive.file`;
+        const host = req.headers.host || '192.168.1.80:4000';
+        const serverCallbackUri = `http://${host}/auth/google/callback`;
+        const scopes = 'openid email profile https://www.googleapis.com/auth/generative-language https://www.googleapis.com/auth/drive.file';
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(serverCallbackUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${encodeURIComponent(redirectUri)}`;
         res.writeHead(302, { Location: googleAuthUrl });
         res.end();
         return;
@@ -94,6 +113,108 @@ export class QuickKodeServer {
       res.writeHead(302, { Location: callbackUrl.toString() });
       res.end();
       return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/auth/google/callback') {
+      const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state') || 'quickkode://auth/google';
+      const error = url.searchParams.get('error');
+
+      if (error) {
+        const errUrl = new URL(state);
+        errUrl.searchParams.set('error', error);
+        res.writeHead(302, { Location: errUrl.toString() });
+        res.end();
+        return;
+      }
+
+      if (!code) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing authorization code from Google' }));
+        return;
+      }
+
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const host = req.headers.host || '192.168.1.80:4000';
+      const serverCallbackUri = `http://${host}/auth/google/callback`;
+
+      if (!clientId || !clientSecret) {
+        // Redirect with instruction that client secret is needed
+        const missingUrl = new URL(state);
+        missingUrl.searchParams.set('error', 'GOOGLE_CLIENT_SECRET not configured on server');
+        res.writeHead(302, { Location: missingUrl.toString() });
+        res.end();
+        return;
+      }
+
+      try {
+        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: serverCallbackUri,
+            grant_type: 'authorization_code',
+          }).toString(),
+        });
+
+        if (!tokenRes.ok) {
+          const errText = await tokenRes.text();
+          console.error('[OAuth] Google token exchange failed:', errText);
+          const errUrl = new URL(state);
+          errUrl.searchParams.set('error', 'Google token exchange failed');
+          res.writeHead(302, { Location: errUrl.toString() });
+          res.end();
+          return;
+        }
+
+        const tokenData = (await tokenRes.json()) as {
+          access_token: string;
+          refresh_token?: string;
+          expires_in?: number;
+        };
+
+        let name = 'Google User';
+        let email = 'user@gmail.com';
+        let avatarUrl = 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png';
+
+        try {
+          const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${tokenData.access_token}` },
+          });
+          if (userRes.ok) {
+            const userData = (await userRes.json()) as { name?: string; email?: string; picture?: string };
+            name = userData.name || name;
+            email = userData.email || email;
+            avatarUrl = userData.picture || avatarUrl;
+          }
+        } catch (uErr) {
+          console.warn('[OAuth] Failed to fetch Google userinfo:', uErr);
+        }
+
+        const successUrl = new URL(state);
+        successUrl.searchParams.set('token', tokenData.access_token);
+        if (tokenData.refresh_token) {
+          successUrl.searchParams.set('refresh_token', tokenData.refresh_token);
+        }
+        successUrl.searchParams.set('name', name);
+        successUrl.searchParams.set('email', email);
+        successUrl.searchParams.set('avatar_url', avatarUrl);
+
+        res.writeHead(302, { Location: successUrl.toString() });
+        res.end();
+        return;
+      } catch (ex: unknown) {
+        console.error('[OAuth] Exception during Google code exchange:', ex);
+        const errUrl = new URL(state);
+        errUrl.searchParams.set('error', 'Authentication exchange error');
+        res.writeHead(302, { Location: errUrl.toString() });
+        res.end();
+        return;
+      }
     }
 
     res.writeHead(404);

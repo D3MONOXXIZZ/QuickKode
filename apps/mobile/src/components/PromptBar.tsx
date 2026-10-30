@@ -29,16 +29,23 @@ export const PromptBar: React.FC<PromptBarProps> = ({
   };
 
   const isTurbo = executionMode === 'turbo';
+  const hasOAuth = Boolean(
+    activeModel.provider === 'antigravity' &&
+    (activeModel.authType === 'oauth' || Boolean(activeModel.oauthToken)),
+  );
   const hasKey = Boolean(
+    hasOAuth ||
     (activeModel.provider === 'antigravity' && activeModel.geminiApiKey) ||
     (activeModel.provider === 'opencode' && activeModel.apiKey),
   );
 
-  const modelLabel = hasKey
+  const modelLabel = hasOAuth
+    ? 'Google OAuth (Active)'
+    : hasKey
     ? activeModel.provider === 'antigravity'
       ? 'Gemini 2.0 Flash'
       : activeModel.modelName.replace('-coder-v2', '').replace('-3-5-sonnet', '')
-    : 'Configure AI Key';
+    : 'Configure AI / Sign In';
 
   const hasText = text.trim().length > 0;
 
@@ -47,14 +54,30 @@ export const PromptBar: React.FC<PromptBarProps> = ({
       {/* Top Floating Mini Controls */}
       <View style={styles.controlsRow}>
         <TouchableOpacity
-          style={[styles.modelBadge, !hasKey && styles.modelBadgeWarning]}
+          style={[
+            styles.modelBadge,
+            hasOAuth && styles.modelBadgeOAuth,
+            !hasKey && styles.modelBadgeWarning,
+          ]}
           onPress={onOpenModelSelector}
           activeOpacity={0.7}
         >
-          <Text style={[styles.sparkIcon, !hasKey && styles.sparkIconWarning]}>
-            {hasKey ? '✦' : '⚠️'}
+          <Text
+            style={[
+              styles.sparkIcon,
+              hasOAuth && styles.sparkIconOAuth,
+              !hasKey && styles.sparkIconWarning,
+            ]}
+          >
+            {hasOAuth ? '🌐' : hasKey ? '✦' : '⚠️'}
           </Text>
-          <Text style={[styles.modelBadgeText, !hasKey && styles.modelBadgeTextWarning]}>
+          <Text
+            style={[
+              styles.modelBadgeText,
+              hasOAuth && styles.modelBadgeTextOAuth,
+              !hasKey && styles.modelBadgeTextWarning,
+            ]}
+          >
             {modelLabel}
           </Text>
           <Text style={styles.dropdownChevron}>⌄</Text>
@@ -139,6 +162,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
   },
+  modelBadgeOAuth: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+  },
   modelBadgeWarning: {
     backgroundColor: theme.colors.accentAmberDim,
     borderColor: 'rgba(245, 158, 11, 0.4)',
@@ -148,6 +175,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginRight: 5,
   },
+  sparkIconOAuth: {
+    color: '#60A5FA',
+  },
   sparkIconWarning: {
     color: theme.colors.accentAmber,
   },
@@ -155,6 +185,10 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     fontSize: 12,
     fontWeight: '600',
+  },
+  modelBadgeTextOAuth: {
+    color: '#93C5FD',
+    fontWeight: '700',
   },
   modelBadgeTextWarning: {
     color: theme.colors.accentAmber,
