@@ -233,7 +233,8 @@ const styles = StyleSheet.create({
     toolCalls: ToolCallRecord[],
     maxTurns: number,
   ): Promise<AgentRunResult> {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${this.config.geminiApiKey}`;
+    const targetModel = this.config.modelName.includes('2') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${this.config.geminiApiKey}`;
 
     const formattedTools = [
       {

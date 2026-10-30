@@ -171,11 +171,12 @@ export class SessionHub {
             ctx.driveFolderId = byok.googleDriveFolderId;
           }
 
-          // If user configured Gemini API key in-app, use it
+          // If user configured Gemini API key in-app or in server environment, use it for live AI
           const activeModelConfig = { ...modelConfig };
-          if (activeModelConfig.provider === 'antigravity' && byok?.geminiApiKey) {
+          const effectiveGeminiKey = byok?.geminiApiKey || process.env.GEMINI_API_KEY;
+          if (activeModelConfig.provider === 'antigravity' && effectiveGeminiKey) {
             activeModelConfig.authType = 'api_key';
-            activeModelConfig.geminiApiKey = byok.geminiApiKey;
+            activeModelConfig.geminiApiKey = effectiveGeminiKey;
           }
 
           const controller =
