@@ -296,7 +296,7 @@ export const App: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#131314" />
+      <StatusBar barStyle="light-content" />
       <View style={styles.root}>
         <ChatScreen
           projectName={activeProject?.name ?? 'QuickKode Project'}

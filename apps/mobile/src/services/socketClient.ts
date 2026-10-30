@@ -11,8 +11,12 @@ export class QuickKodeSocketClient {
   private serverUrl: string;
   private isConnected = false;
 
-  constructor(serverUrl = 'ws://localhost:4000') {
-    this.serverUrl = serverUrl;
+  constructor(serverUrl?: string) {
+    this.serverUrl =
+      serverUrl ??
+      (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ORCHESTRATOR_URL
+        ? process.env.EXPO_PUBLIC_ORCHESTRATOR_URL
+        : 'ws://192.168.1.80:4000');
   }
 
   get connected(): boolean {
