@@ -9,16 +9,16 @@ import type {
   FileTreeNode,
   FileDiff,
 } from '@quickkode/shared';
-import type { ClientProject, ChatThread } from './types/client.js';
-import { QuickKodeSocketClient } from './services/socketClient.js';
-import { ChatScreen } from './screens/ChatScreen.js';
-import { SidebarDrawer } from './components/SidebarDrawer.js';
-import { GitHubImportModal } from './components/GitHubImportModal.js';
-import { SettingsModal } from './components/SettingsModal.js';
-import { FileTreeModal } from './components/FileTreeModal.js';
-import { CodeEditorModal } from './components/CodeEditorModal.js';
-import { DiffViewerModal } from './components/DiffViewerModal.js';
-import { LivePreviewModal } from './components/LivePreviewModal.js';
+import type { ClientProject, ChatThread } from './types/client';
+import { QuickKodeSocketClient } from './services/socketClient';
+import { ChatScreen } from './screens/ChatScreen';
+import { SidebarDrawer } from './components/SidebarDrawer';
+import { GitHubImportModal } from './components/GitHubImportModal';
+import { SettingsModal } from './components/SettingsModal';
+import { FileTreeModal } from './components/FileTreeModal';
+import { CodeEditorModal } from './components/CodeEditorModal';
+import { DiffViewerModal } from './components/DiffViewerModal';
+import { LivePreviewModal } from './components/LivePreviewModal';
 
 export const App: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState('session-primary-001');

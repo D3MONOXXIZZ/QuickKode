@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import type { ClientProject, ChatThread, DrawerViewMode } from '../types/client.js';
+import type { ClientProject, ChatThread, DrawerViewMode } from '../types/client';
 import type { ActiveModelConfig } from '@quickkode/shared';
 
 export interface SidebarDrawerProps {

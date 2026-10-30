@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import type { ChatMessage, ActiveModelConfig, ExecutionMode, ActivePreview } from '@quickkode/shared';
-import { PromptBar } from '../components/PromptBar.js';
-import { ThoughtWidget } from '../components/ThoughtWidget.js';
+import { PromptBar } from '../components/PromptBar';
+import { ThoughtWidget } from '../components/ThoughtWidget';
 
 export interface ChatScreenProps {
   projectName: string;
